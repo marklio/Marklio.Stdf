@@ -18,10 +18,16 @@ internal static class CompressionHelper
     /// <summary>
     /// Detects compression from magic bytes at the start of a seekable stream.
     /// Resets the stream position afterward.
+    /// Non-seekable streams return <see cref="StdfCompression.None"/> because
+    /// length/position are unavailable; callers must pre-decompress or specify
+    /// compression explicitly.
     /// </summary>
     public static StdfCompression Detect(Stream stream)
     {
-        if (!stream.CanRead || stream.Length < 2)
+        if (!stream.CanRead || !stream.CanSeek)
+            return StdfCompression.None;
+
+        if (stream.Length < 2)
             return StdfCompression.None;
 
         long pos = stream.Position;
