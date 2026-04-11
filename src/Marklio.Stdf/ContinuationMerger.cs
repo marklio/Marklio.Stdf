@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Marklio.Stdf.Records;
 
@@ -7,6 +8,7 @@ namespace Marklio.Stdf;
 /// Extension methods for merging V4-2007 continuation records (PSR, STR)
 /// into single logical records.
 /// </summary>
+[Experimental("STDF0001", UrlFormat = "https://github.com/marklio/Marklio.Stdf")]
 public static class ContinuationMerger
 {
     private const byte ContinuationBit = 0x01;

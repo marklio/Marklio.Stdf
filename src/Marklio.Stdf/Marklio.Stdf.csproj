@@ -8,7 +8,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>Marklio.Stdf</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.0-notforpublishing</Version>
     <Authors>Mark Lio</Authors>
     <Description>High-performance STDF (Standard Test Data Format) V4/V4-2007 reader and writer for .NET. Features byte-exact round-tripping, source-generated serialization, System.IO.Pipelines-based I/O, and transparent gzip/bzip2 compression.</Description>
     <PackageTags>stdf;semiconductor;test-data;ate;parser;binary;round-trip</PackageTags>
