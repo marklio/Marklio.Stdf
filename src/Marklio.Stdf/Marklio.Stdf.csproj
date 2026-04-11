@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Marklio.Stdf</RootNamespace>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <NoWarn>CS0282;CS1591</NoWarn>
+
+    <!-- NuGet package metadata -->
+    <PackageId>Marklio.Stdf</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Mark Lio</Authors>
+    <Description>High-performance STDF (Standard Test Data Format) V4/V4-2007 reader and writer for .NET. Features byte-exact round-tripping, source-generated serialization, System.IO.Pipelines-based I/O, and transparent gzip/bzip2 compression.</Description>
+    <PackageTags>stdf;semiconductor;test-data;ate;parser;binary;round-trip</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Marklio.Stdf.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Marklio.Stdf.Generator\Marklio.Stdf.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+  </ItemGroup>
+
+</Project>

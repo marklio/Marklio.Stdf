@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Marklio.Stdf.Benchmarks/Marklio.Stdf.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Marklio.Stdf.Samples/Marklio.Stdf.Samples.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Marklio.Stdf.Generator/Marklio.Stdf.Generator.csproj" />
+    <Project Path="src/Marklio.Stdf/Marklio.Stdf.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Marklio.Stdf.Generator.Tests/Marklio.Stdf.Generator.Tests.csproj" />
+    <Project Path="tests/Marklio.Stdf.Tests/Marklio.Stdf.Tests.csproj" />
+  </Folder>
+</Solution>
