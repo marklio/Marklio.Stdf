@@ -82,4 +82,13 @@ public partial record struct Ptr : ITestRecord
 
     /// <summary>High specification limit value. [STDF: HI_SPEC, R*4]</summary>
     public float? HighSpecLimit { get; set; }
+
+    /// <summary>Gets <see cref="TestFlags"/> as a typed enum. See <see cref="TestFlags"/> for the raw value.</summary>
+    public TestResultFlags TestFlagsEnum => (TestResultFlags)TestFlags;
+
+    /// <summary>Gets <see cref="ParametricFlags"/> as a typed enum. See <see cref="ParametricFlags"/> for the raw value.</summary>
+    public ParametricTestFlags ParametricFlagsEnum => (ParametricTestFlags)ParametricFlags;
+
+    /// <summary>Gets <see cref="OptionalFlags"/> as a typed enum. See <see cref="OptionalFlags"/> for the raw value.</summary>
+    public PtrOptionalFlags OptionalFlagsEnum => (PtrOptionalFlags)(OptionalFlags ?? 0);
 }

@@ -107,4 +107,10 @@ public partial record struct Ftr : ITestRecord
     /// <summary>Spin map (enabled comparators). [STDF: SPIN_MAP, D*n]</summary>
     /// <remarks>Wire format is bit-count-prefixed data deserialized into a <see cref="BitArray"/>.</remarks>
     [BitArray] public BitArray? SpinMap { get; set; }
+
+    /// <summary>Gets <see cref="TestFlags"/> as a typed enum. See <see cref="TestFlags"/> for the raw value.</summary>
+    public TestResultFlags TestFlagsEnum => (TestResultFlags)(TestFlags ?? 0);
+
+    /// <summary>Gets <see cref="OptionalFlags"/> as a typed enum. See <see cref="OptionalFlags"/> for the raw value.</summary>
+    public FtrOptionalFlags OptionalFlagsEnum => (FtrOptionalFlags)(OptionalFlags ?? 0);
 }

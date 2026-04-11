@@ -42,6 +42,17 @@ internal static class RecordAnalyzer
             // Skip explicit interface implementations (e.g., ushort IBinRecord.BinNumber => ...)
             if (propSyntax.ExplicitInterfaceSpecifier != null) continue;
 
+            // Skip computed (get-only) properties that carry no STDF attributes - they are not STDF fields.
+            // Expression-bodied properties with attributes (e.g. [WireCount]) are still included.
+            if (propSyntax.ExpressionBody != null && propSyntax.AttributeLists.Count == 0) continue;
+            if (propSyntax.ExpressionBody == null &&
+                propSyntax.AccessorList != null &&
+                !propSyntax.AccessorList.Accessors.Any(a =>
+                    a.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetAccessorDeclaration ||
+                    a.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.InitAccessorDeclaration) &&
+                propSyntax.AttributeLists.Count == 0)
+                continue;
+
             var propSymbol = context.SemanticModel.GetDeclaredSymbol(propSyntax) as IPropertySymbol;
             if (propSymbol is null) continue;
 
