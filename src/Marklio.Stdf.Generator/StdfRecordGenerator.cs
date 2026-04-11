@@ -13,20 +13,35 @@ public class StdfRecordGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var recordTypes = context.SyntaxProvider
+        var analysisResults = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 "Marklio.Stdf.Attributes.StdfRecordAttribute",
                 predicate: (node, _) => node is TypeDeclarationSyntax,
                 transform: (ctx, _) => RecordAnalyzer.Analyze(ctx))
-            .Where(m => m is not null)
-            .Select((m, _) => m!)
+            .Where(r => r is not null)
+            .Select((r, _) => r!)
             .Collect();
 
-        context.RegisterSourceOutput(recordTypes, static (ctx, records) => EmitGeneratedCode(ctx, records));
+        context.RegisterSourceOutput(analysisResults, static (ctx, results) => EmitGeneratedCode(ctx, results));
     }
 
-    private static void EmitGeneratedCode(SourceProductionContext context, ImmutableArray<RecordMetadata> records)
+    private static void EmitGeneratedCode(SourceProductionContext context, ImmutableArray<AnalysisResult> results)
     {
+        // Report all diagnostics first
+        foreach (var result in results)
+        {
+            foreach (var diag in result.Diagnostics)
+            {
+                context.ReportDiagnostic(diag.ToDiagnostic());
+            }
+        }
+
+        // Emit source for records that have metadata
+        var records = results
+            .Where(r => r.Metadata is not null)
+            .Select(r => r.Metadata!)
+            .ToImmutableArray();
+
         foreach (var record in records)
         {
             var source = RecordEmitter.EmitRecordPartial(record);

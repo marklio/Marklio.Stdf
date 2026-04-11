@@ -8,11 +8,11 @@ namespace Marklio.Stdf.Generator;
 
 /// <summary>
 /// Analyzes the Roslyn syntax tree of types annotated with [StdfRecord]
-/// to extract field metadata in declaration order.
+/// to extract field metadata in declaration order, collecting diagnostics for invalid usage.
 /// </summary>
 internal static class RecordAnalyzer
 {
-    public static RecordMetadata? Analyze(GeneratorAttributeSyntaxContext context)
+    public static AnalysisResult? Analyze(GeneratorAttributeSyntaxContext context)
     {
         var symbol = (INamedTypeSymbol)context.TargetSymbol;
         var attr = context.Attributes.FirstOrDefault(a =>
@@ -30,6 +30,8 @@ internal static class RecordAnalyzer
             RecordType = recType,
             RecordSubType = recSub,
         };
+
+        var diagnostics = new List<DiagnosticInfo>();
 
         // Get properties in syntax-declaration order from the partial record struct
         var syntaxNode = (TypeDeclarationSyntax)context.TargetNode;
@@ -56,7 +58,7 @@ internal static class RecordAnalyzer
             var propSymbol = context.SemanticModel.GetDeclaredSymbol(propSyntax) as IPropertySymbol;
             if (propSymbol is null) continue;
 
-            var field = AnalyzeProperty(propSymbol, order);
+            var field = AnalyzeProperty(propSymbol, propSyntax, order, diagnostics);
             if (field is not null)
             {
                 metadata.Fields.Add(field);
@@ -64,10 +66,17 @@ internal static class RecordAnalyzer
             }
         }
 
-        return metadata;
+        // Cross-field validation: WireCount groups with no matching CountedArray
+        ValidateWireCountGroups(metadata, syntaxNode, diagnostics);
+
+        return new AnalysisResult(metadata, diagnostics);
     }
 
-    private static FieldMetadata? AnalyzeProperty(IPropertySymbol prop, int order)
+    private static FieldMetadata? AnalyzeProperty(
+        IPropertySymbol prop,
+        PropertyDeclarationSyntax propSyntax,
+        int order,
+        List<DiagnosticInfo> diagnostics)
     {
         var field = new FieldMetadata
         {
@@ -133,13 +142,71 @@ internal static class RecordAnalyzer
             }
         }
 
-        // Resolve STDF type
-        field.StdfType = ResolveStdfType(field, elementType, isArray);
+        var location = propSyntax.GetLocation();
+
+        // Validate [CountedArray] on non-array
+        if (field.CountedArrayGroup != null && !isArray)
+        {
+            diagnostics.Add(new DiagnosticInfo(
+                Diagnostics.CountedArrayOnNonArray,
+                location,
+                prop.Name,
+                prop.Type.ToDisplayString()));
+        }
+
+        // Validate [FixedString] on non-string
+        if (field.FixedStringLength > 0 && elementType.SpecialType != SpecialType.System_String)
+        {
+            diagnostics.Add(new DiagnosticInfo(
+                Diagnostics.FixedStringOnNonString,
+                location,
+                prop.Name,
+                prop.Type.ToDisplayString()));
+        }
+
+        // Resolve STDF type (with diagnostic reporting for unsupported types)
+        field.StdfType = ResolveStdfType(field, elementType, isArray, prop.Name, prop.Type.ToDisplayString(), location, diagnostics);
 
         return field;
     }
 
-    private static StdfFieldType ResolveStdfType(FieldMetadata field, ITypeSymbol elementType, bool isArray)
+    private static void ValidateWireCountGroups(
+        RecordMetadata metadata,
+        TypeDeclarationSyntax syntaxNode,
+        List<DiagnosticInfo> diagnostics)
+    {
+        var countedArrayGroups = new HashSet<string>(
+            metadata.Fields
+                .Where(f => f.CountedArrayGroup != null)
+                .Select(f => f.CountedArrayGroup!));
+
+        foreach (var field in metadata.Fields)
+        {
+            if (!field.IsWireCount || field.WireCountGroup == null) continue;
+            if (countedArrayGroups.Contains(field.WireCountGroup)) continue;
+
+            // Find the property syntax node for location
+            var propSyntax = syntaxNode.Members
+                .OfType<PropertyDeclarationSyntax>()
+                .FirstOrDefault(p => p.Identifier.Text == field.PropertyName);
+
+            var location = propSyntax?.GetLocation() ?? syntaxNode.GetLocation();
+            diagnostics.Add(new DiagnosticInfo(
+                Diagnostics.WireCountGroupUnmatched,
+                location,
+                field.PropertyName,
+                field.WireCountGroup));
+        }
+    }
+
+    private static StdfFieldType ResolveStdfType(
+        FieldMetadata field,
+        ITypeSymbol elementType,
+        bool isArray,
+        string propertyName,
+        string fullTypeName,
+        Location location,
+        List<DiagnosticInfo> diagnostics)
     {
         if (field.IsWireCount)
         {
@@ -148,7 +215,9 @@ internal static class RecordAnalyzer
                 SpecialType.System_Byte => StdfFieldType.WireCountU1,
                 SpecialType.System_UInt16 => StdfFieldType.WireCountU2,
                 SpecialType.System_UInt32 => StdfFieldType.WireCountU4,
-                _ => StdfFieldType.WireCountU2,
+                _ => ReportUnsupportedAndDefault(
+                    diagnostics, location, propertyName, fullTypeName,
+                    StdfFieldType.WireCountU2),
             };
         }
 
@@ -188,7 +257,9 @@ internal static class RecordAnalyzer
                 SpecialType.System_Single => StdfFieldType.ArrayR4,
                 SpecialType.System_Double => StdfFieldType.ArrayR8,
                 SpecialType.System_String => StdfFieldType.ArrayCn,
-                _ => StdfFieldType.ArrayU1,
+                _ => ReportUnsupportedAndDefault(
+                    diagnostics, location, propertyName, fullTypeName,
+                    StdfFieldType.ArrayU1),
             };
         }
 
@@ -214,7 +285,24 @@ internal static class RecordAnalyzer
             SpecialType.System_String => StdfFieldType.Cn,
             _ when elementType.Name == "DateTime" => StdfFieldType.DateTime,
             _ when elementType.Name == "BitArray" => StdfFieldType.Dn,
-            _ => StdfFieldType.U1,
+            _ => ReportUnsupportedAndDefault(
+                diagnostics, location, propertyName, fullTypeName,
+                StdfFieldType.U1),
         };
+    }
+
+    private static StdfFieldType ReportUnsupportedAndDefault(
+        List<DiagnosticInfo> diagnostics,
+        Location location,
+        string propertyName,
+        string fullTypeName,
+        StdfFieldType fallback)
+    {
+        diagnostics.Add(new DiagnosticInfo(
+            Diagnostics.UnsupportedPropertyType,
+            location,
+            propertyName,
+            fullTypeName));
+        return fallback;
     }
 }
