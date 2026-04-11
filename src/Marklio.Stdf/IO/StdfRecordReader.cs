@@ -25,6 +25,8 @@ internal sealed class StdfRecordReader
     /// <summary>
     /// Reads all STDF records from the pipe.
     /// Endianness is auto-detected from the FAR record.
+    /// The caller is responsible for calling <see cref="PipeReader.CompleteAsync"/>
+    /// after enumeration finishes or is abandoned.
     /// </summary>
     public async IAsyncEnumerable<StdfRecord> ReadAllAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -43,7 +45,7 @@ internal sealed class StdfRecordReader
                 if (buffer.Length < HeaderSize)
                 {
                     if (readResult.IsCompleted)
-                        goto Done;
+                        yield break;
                     break; // need more data
                 }
 
@@ -77,10 +79,10 @@ internal sealed class StdfRecordReader
                         {
                             // Truncated record — try scanning ahead
                             var skipped = TryScanForNextRecord(ref buffer, readResult.IsCompleted);
-                            if (skipped < 0) goto Done;
+                            if (skipped < 0) yield break;
                             continue;
                         }
-                        goto Done; // truncated record at end of stream
+                        yield break; // truncated record at end of stream
                     }
                     break; // need more data
                 }
@@ -138,9 +140,6 @@ internal sealed class StdfRecordReader
             if (readResult.IsCompleted)
                 break;
         }
-
-    Done:
-        await _pipeReader.CompleteAsync().ConfigureAwait(false);
     }
 
     /// <summary>

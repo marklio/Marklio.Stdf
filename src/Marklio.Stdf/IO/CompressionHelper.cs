@@ -68,13 +68,18 @@ internal static class CompressionHelper
     /// Wraps a read stream with decompression if compression is detected.
     /// Returns the original stream if uncompressed.
     /// </summary>
-    public static Stream WrapForReading(Stream stream)
+    /// <param name="stream">The stream to read from.</param>
+    /// <param name="leaveOpen">
+    /// If <c>true</c>, the inner <paramref name="stream"/> is not closed
+    /// when the decompression wrapper is disposed.
+    /// </param>
+    public static Stream WrapForReading(Stream stream, bool leaveOpen = false)
     {
         var compression = Detect(stream);
         return compression switch
         {
-            StdfCompression.Gzip => new GZipStream(stream, CompressionMode.Decompress, leaveOpen: false),
-            StdfCompression.Bzip2 => new BZip2InputStream(stream) { IsStreamOwner = false },
+            StdfCompression.Gzip => new GZipStream(stream, CompressionMode.Decompress, leaveOpen: leaveOpen),
+            StdfCompression.Bzip2 => new BZip2InputStream(stream) { IsStreamOwner = !leaveOpen },
             _ => stream,
         };
     }
@@ -108,12 +113,18 @@ internal static class CompressionHelper
     /// <summary>
     /// Wraps a write stream with compression.
     /// </summary>
-    public static Stream WrapForWriting(Stream stream, StdfCompression compression)
+    /// <param name="stream">The stream to write to.</param>
+    /// <param name="compression">The compression algorithm to use.</param>
+    /// <param name="leaveOpen">
+    /// If <c>true</c>, the inner <paramref name="stream"/> is not closed
+    /// when the compression wrapper is disposed.
+    /// </param>
+    public static Stream WrapForWriting(Stream stream, StdfCompression compression, bool leaveOpen = false)
     {
         return compression switch
         {
-            StdfCompression.Gzip => new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: false),
-            StdfCompression.Bzip2 => new BZip2OutputStream(stream) { IsStreamOwner = false },
+            StdfCompression.Gzip => new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: leaveOpen),
+            StdfCompression.Bzip2 => new BZip2OutputStream(stream) { IsStreamOwner = !leaveOpen },
             _ => stream,
         };
     }
