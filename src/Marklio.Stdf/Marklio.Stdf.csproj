@@ -18,6 +18,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/marklio/Marklio.Stdf</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/marklio/Marklio.Stdf</PackageProjectUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
