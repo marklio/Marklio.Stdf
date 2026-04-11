@@ -45,6 +45,7 @@ internal static class RecordEmitter
         sb.AppendLine($"    internal {presenceType} _fieldPresence;");
         sb.AppendLine();
         // Parameterless constructor: sets all presence bits so user-created records serialize fully
+        sb.AppendLine($"    /// <summary>Initializes a new instance of the <see cref=\"{record.TypeName}\"/> record.</summary>");
         sb.AppendLine($"    public {record.TypeName}()");
         sb.AppendLine("    {");
         sb.AppendLine($"        _fieldPresence = {allPresent};");
@@ -62,7 +63,7 @@ internal static class RecordEmitter
         sb.AppendLine();
 
         // Serialize
-        EmitSerialize(sb, fields, wireCountFields, groupFirstArray);
+        EmitSerialize(sb, record, fields, wireCountFields, groupFirstArray);
         sb.AppendLine();
 
         // Helper methods
@@ -74,6 +75,7 @@ internal static class RecordEmitter
 
     private static void EmitDeserialize(StringBuilder sb, RecordMetadata record, List<FieldMetadata> fields)
     {
+        sb.AppendLine($"    /// <summary>Deserializes a <see cref=\"{record.TypeName}\"/> from the specified reader.</summary>");
         sb.AppendLine($"    public static {record.TypeName} Deserialize(ref System.Buffers.SequenceReader<byte> reader, Marklio.Stdf.Endianness endianness)");
         sb.AppendLine("    {");
         sb.AppendLine($"        var result = new {record.TypeName}();");
@@ -234,8 +236,9 @@ internal static class RecordEmitter
         }
     }
 
-    private static void EmitSerialize(StringBuilder sb, List<FieldMetadata> fields, List<FieldMetadata> wireCountFields, Dictionary<string, string> groupFirstArray)
+    private static void EmitSerialize(StringBuilder sb, RecordMetadata record, List<FieldMetadata> fields, List<FieldMetadata> wireCountFields, Dictionary<string, string> groupFirstArray)
     {
+        sb.AppendLine($"    /// <summary>Serializes this <see cref=\"{record.TypeName}\"/> to the specified writer.</summary>");
         sb.AppendLine("    public void Serialize(System.Buffers.IBufferWriter<byte> writer, Marklio.Stdf.Endianness endianness)");
         sb.AppendLine("    {");
 

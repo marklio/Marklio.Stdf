@@ -279,6 +279,7 @@ public sealed class StdfWriter : IAsyncDisposable
     public ValueTask WriteAsync<T>(T record, CancellationToken cancellationToken = default) where T : struct, IStdfRecord
         => _writer.WriteAsync(new StdfRecord(record, T.RecordType, T.RecordSubType), cancellationToken);
 
+    /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
         await _writer.DisposeAsync().ConfigureAwait(false);

@@ -10,6 +10,11 @@ public sealed class FixedStringAttribute : Attribute
     /// <summary>The fixed length in bytes.</summary>
     public int Length { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FixedStringAttribute"/> class
+    /// with the specified fixed length in bytes.
+    /// </summary>
+    /// <param name="length">The fixed length in bytes of the character string on the wire.</param>
     public FixedStringAttribute(int length)
     {
         Length = length;

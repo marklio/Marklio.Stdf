@@ -9,73 +9,398 @@ namespace Marklio.Stdf.Records;
 /// V4-2007. Contains detailed scan test results. Hand-implemented because it uses
 /// variable-width fields (U*f) whose byte sizes are determined by earlier fields
 /// (CYC_SIZE, PMR_SIZE, CHN_SIZE, PAT_SIZE, BIT_SIZE, U1_SIZE, U2_SIZE, U3_SIZE, UTX_SIZE).
+/// Supports continuation. Implements <see cref="ITestRecord"/>.
 /// </summary>
 public readonly record struct Str : IStdfRecord, ITestRecord
 {
     static byte IStdfRecord.RecordType => 15;
     static byte IStdfRecord.RecordSubType => 30;
 
+    /// <summary>
+    /// Continuation flag. Bit 0: if set, this record continues in the next STR record.
+    /// [STDF: CONT_FLG, B*1]
+    /// </summary>
     public byte ContinuationFlag { get; init; }
+
+    /// <summary>
+    /// Test number.
+    /// [STDF: TEST_NUM, U*4]
+    /// </summary>
     public uint TestNumber { get; init; }
+
+    /// <summary>
+    /// Test head number.
+    /// [STDF: HEAD_NUM, U*1]
+    /// </summary>
     public byte HeadNumber { get; init; }
+
+    /// <summary>
+    /// Test site number.
+    /// [STDF: SITE_NUM, U*1]
+    /// </summary>
     public byte SiteNumber { get; init; }
+
+    /// <summary>
+    /// Index of the PSR record describing the pattern sequence.
+    /// [STDF: PSR_REF, U*2]
+    /// </summary>
     public ushort PsrReference { get; init; }
+
+    /// <summary>
+    /// Test flags (same encoding as PTR).
+    /// [STDF: TEST_FLG, B*1]
+    /// </summary>
     public byte TestFlags { get; init; }
+
+    /// <summary>
+    /// Type of data log.
+    /// [STDF: LOG_TYP, C*n]
+    /// </summary>
     public string? LogType { get; init; }
+
+    /// <summary>
+    /// Descriptive test text.
+    /// [STDF: TEST_TXT, C*n]
+    /// </summary>
     public string? TestText { get; init; }
+
+    /// <summary>
+    /// Alarm name or ID.
+    /// [STDF: ALARM_ID, C*n]
+    /// </summary>
     public string? AlarmId { get; init; }
+
+    /// <summary>
+    /// Program text.
+    /// [STDF: PROG_TXT, C*n]
+    /// </summary>
     public string? ProgramText { get; init; }
+
+    /// <summary>
+    /// Result text.
+    /// [STDF: RSLT_TXT, C*n]
+    /// </summary>
     public string? ResultText { get; init; }
+
+    /// <summary>
+    /// Z value.
+    /// [STDF: Z_VAL, U*1]
+    /// </summary>
     public byte? ZVal { get; init; }
+
+    /// <summary>
+    /// Fail/mask/unused flags.
+    /// [STDF: FMU_FLG, B*1]
+    /// </summary>
     public byte? FmuFlags { get; init; }
+
+    /// <summary>
+    /// Mask bitmap.
+    /// [STDF: MASK_MAP, D*n]
+    /// </summary>
+    /// <remarks>
+    /// Wire format is bit-count-prefixed (D*n), deserialized into a <see cref="System.Collections.BitArray"/>.
+    /// </remarks>
     public System.Collections.BitArray? MaskMap { get; init; }
+
+    /// <summary>
+    /// Fail bitmap.
+    /// [STDF: FAL_MAP, D*n]
+    /// </summary>
+    /// <remarks>
+    /// Wire format is bit-count-prefixed (D*n), deserialized into a <see cref="System.Collections.BitArray"/>.
+    /// </remarks>
     public System.Collections.BitArray? FailMap { get; init; }
+
+    /// <summary>
+    /// Total cycles logged.
+    /// [STDF: CYC_CNT, U*8]
+    /// </summary>
     public ulong? CycleCount { get; init; }
+
+    /// <summary>
+    /// Total fails logged.
+    /// [STDF: TOTF_CNT, U*4]
+    /// </summary>
     public uint? TotalFailCount { get; init; }
+
+    /// <summary>
+    /// Total entries logged.
+    /// [STDF: TOTL_CNT, U*4]
+    /// </summary>
     public uint? TotalLogCount { get; init; }
+
+    /// <summary>
+    /// Base cycle number offset.
+    /// [STDF: CYC_BASE, U*8]
+    /// </summary>
     public ulong? CycleBase { get; init; }
+
+    /// <summary>
+    /// Base bit number offset.
+    /// [STDF: BIT_BASE, U*4]
+    /// </summary>
     public uint? BitBase { get; init; }
+
+    /// <summary>
+    /// Number of conditions.
+    /// [STDF: COND_CNT, U*2]
+    /// </summary>
     public ushort? ConditionCount { get; init; }
+
+    /// <summary>
+    /// Number of limits.
+    /// [STDF: LIM_CNT, U*2]
+    /// </summary>
     public ushort? LimitCount { get; init; }
+
+    /// <summary>
+    /// Byte width for cycle offset fields (1/2/4/8).
+    /// [STDF: CYC_SIZE, U*1]
+    /// </summary>
     public byte? CycleSize { get; init; }
+
+    /// <summary>
+    /// Byte width for PMR index fields.
+    /// [STDF: PMR_SIZE, U*1]
+    /// </summary>
     public byte? PmrSize { get; init; }
+
+    /// <summary>
+    /// Byte width for chain number fields.
+    /// [STDF: CHN_SIZE, U*1]
+    /// </summary>
     public byte? ChainSize { get; init; }
+
+    /// <summary>
+    /// Byte width for pattern number fields.
+    /// [STDF: PAT_SIZE, U*1]
+    /// </summary>
     public byte? PatternSize { get; init; }
+
+    /// <summary>
+    /// Byte width for bit position fields.
+    /// [STDF: BIT_SIZE, U*1]
+    /// </summary>
     public byte? BitSize { get; init; }
+
+    /// <summary>
+    /// Byte width for User1 fields.
+    /// [STDF: U1_SIZE, U*1]
+    /// </summary>
     public byte? U1Size { get; init; }
+
+    /// <summary>
+    /// Byte width for User2 fields.
+    /// [STDF: U2_SIZE, U*1]
+    /// </summary>
     public byte? U2Size { get; init; }
+
+    /// <summary>
+    /// Byte width for User3 fields.
+    /// [STDF: U3_SIZE, U*1]
+    /// </summary>
     public byte? U3Size { get; init; }
+
+    /// <summary>
+    /// Byte width for UserText index fields.
+    /// [STDF: UTX_SIZE, U*1]
+    /// </summary>
     public byte? UtxSize { get; init; }
+
+    /// <summary>
+    /// Starting capture index for this record.
+    /// [STDF: CAP_BGN, U*2]
+    /// </summary>
     public ushort? CapBegin { get; init; }
+
+    /// <summary>
+    /// Limit indexes (counted by LIM_CNT).
+    /// [STDF: LIM_INDX, kxU*2]
+    /// </summary>
     public ushort[]? LimitIndexes { get; init; }
+
+    /// <summary>
+    /// Limit spec values (counted by LIM_CNT).
+    /// [STDF: LIM_SPEC, kxU*4]
+    /// </summary>
     public uint[]? LimitSpecs { get; init; }
+
+    /// <summary>
+    /// Condition names (counted by COND_CNT).
+    /// [STDF: COND_LST, kxC*n]
+    /// </summary>
     public string[]? ConditionList { get; init; }
-    // Variable-width arrays (stored as ulong[] regardless of wire width)
+
+    /// <summary>
+    /// Number of cycle offset entries in this segment.
+    /// [STDF: CYC_CNT, U*2]
+    /// </summary>
     public ushort? CycCnt { get; init; }
+
+    /// <summary>
+    /// Cycle offset values.
+    /// [STDF: CYC_OFST, kxU*f]
+    /// </summary>
+    /// <remarks>
+    /// Variable-width field. Wire byte width per element is determined by <see cref="CycleSize"/>. Always stored as <see langword="ulong"/>[] regardless of wire width.
+    /// </remarks>
     public ulong[]? CycleOffsets { get; init; }
+
+    /// <summary>
+    /// Number of PMR index entries.
+    /// [STDF: PMR_CNT, U*2]
+    /// </summary>
     public ushort? PmrCnt { get; init; }
+
+    /// <summary>
+    /// PMR indexes.
+    /// [STDF: PMR_INDX, kxU*f]
+    /// </summary>
+    /// <remarks>
+    /// Variable-width field. Wire byte width per element is determined by <see cref="PmrSize"/>. Always stored as <see langword="ulong"/>[] regardless of wire width.
+    /// </remarks>
     public ulong[]? PmrIndexes { get; init; }
+
+    /// <summary>
+    /// Number of chain number entries.
+    /// [STDF: CHN_CNT, U*2]
+    /// </summary>
     public ushort? ChnCnt { get; init; }
+
+    /// <summary>
+    /// Chain numbers.
+    /// [STDF: CHN_NUM, kxU*f]
+    /// </summary>
+    /// <remarks>
+    /// Variable-width field. Wire byte width per element is determined by <see cref="ChainSize"/>. Always stored as <see langword="ulong"/>[] regardless of wire width.
+    /// </remarks>
     public ulong[]? ChainNumbers { get; init; }
+
+    /// <summary>
+    /// Number of expected data bytes.
+    /// [STDF: EXP_CNT, U*2]
+    /// </summary>
     public ushort? ExpCnt { get; init; }
+
+    /// <summary>
+    /// Expected compare data.
+    /// [STDF: EXP_DATA, kxU*1]
+    /// </summary>
     public byte[]? ExpectedData { get; init; }
+
+    /// <summary>
+    /// Number of captured data bytes.
+    /// [STDF: CAP_CNT, U*2]
+    /// </summary>
     public ushort? CapCnt { get; init; }
+
+    /// <summary>
+    /// Captured data.
+    /// [STDF: CAP_DATA, kxU*1]
+    /// </summary>
     public byte[]? CaptureData { get; init; }
+
+    /// <summary>
+    /// Number of new data bytes.
+    /// [STDF: NEW_CNT, U*2]
+    /// </summary>
     public ushort? NewCnt { get; init; }
+
+    /// <summary>
+    /// New (repaired) data.
+    /// [STDF: NEW_DATA, kxU*1]
+    /// </summary>
     public byte[]? NewData { get; init; }
+
+    /// <summary>
+    /// Number of pattern number entries.
+    /// [STDF: PAT_CNT, U*2]
+    /// </summary>
     public ushort? PatCnt { get; init; }
+
+    /// <summary>
+    /// Pattern numbers.
+    /// [STDF: PAT_NUM, kxU*f]
+    /// </summary>
+    /// <remarks>
+    /// Variable-width field. Wire byte width per element is determined by <see cref="PatternSize"/>. Always stored as <see langword="ulong"/>[] regardless of wire width.
+    /// </remarks>
     public ulong[]? PatternNumbers { get; init; }
+
+    /// <summary>
+    /// Number of bit position entries.
+    /// [STDF: BPOS_CNT, U*2]
+    /// </summary>
     public ushort? BposCnt { get; init; }
+
+    /// <summary>
+    /// Bit positions.
+    /// [STDF: BIT_POS, kxU*f]
+    /// </summary>
+    /// <remarks>
+    /// Variable-width field. Wire byte width per element is determined by <see cref="BitSize"/>. Always stored as <see langword="ulong"/>[] regardless of wire width.
+    /// </remarks>
     public ulong[]? BitPositions { get; init; }
+
+    /// <summary>
+    /// Number of User1 entries.
+    /// [STDF: USR1_CNT, U*2]
+    /// </summary>
     public ushort? Usr1Cnt { get; init; }
+
+    /// <summary>
+    /// User-defined data 1.
+    /// [STDF: USR1, kxU*f]
+    /// </summary>
+    /// <remarks>
+    /// Variable-width field. Wire byte width per element is determined by <see cref="U1Size"/>. Always stored as <see langword="ulong"/>[] regardless of wire width.
+    /// </remarks>
     public ulong[]? User1 { get; init; }
+
+    /// <summary>
+    /// Number of User2 entries.
+    /// [STDF: USR2_CNT, U*2]
+    /// </summary>
     public ushort? Usr2Cnt { get; init; }
+
+    /// <summary>
+    /// User-defined data 2.
+    /// [STDF: USR2, kxU*f]
+    /// </summary>
+    /// <remarks>
+    /// Variable-width field. Wire byte width per element is determined by <see cref="U2Size"/>. Always stored as <see langword="ulong"/>[] regardless of wire width.
+    /// </remarks>
     public ulong[]? User2 { get; init; }
+
+    /// <summary>
+    /// Number of User3 entries.
+    /// [STDF: USR3_CNT, U*2]
+    /// </summary>
     public ushort? Usr3Cnt { get; init; }
+
+    /// <summary>
+    /// User-defined data 3.
+    /// [STDF: USR3, kxU*f]
+    /// </summary>
+    /// <remarks>
+    /// Variable-width field. Wire byte width per element is determined by <see cref="U3Size"/>. Always stored as <see langword="ulong"/>[] regardless of wire width.
+    /// </remarks>
     public ulong[]? User3 { get; init; }
+
+    /// <summary>
+    /// Number of user text entries.
+    /// [STDF: TXT_CNT, U*2]
+    /// </summary>
     public ushort? TxtCnt { get; init; }
+
+    /// <summary>
+    /// User text entries.
+    /// [STDF: USER_TXT, kxC*n]
+    /// </summary>
     public string[]? UserText { get; init; }
 
+    /// <summary>Initializes a new instance of the <see cref="Str"/> record.</summary>
     public Str()
     {
         LogType = string.Empty;
@@ -85,6 +410,7 @@ public readonly record struct Str : IStdfRecord, ITestRecord
         ResultText = string.Empty;
     }
 
+    /// <summary>Deserializes a <see cref="Str"/> from the specified reader.</summary>
     public static Str Deserialize(ref SequenceReader<byte> reader, Endianness endianness)
     {
         var r = new Str();
@@ -234,6 +560,7 @@ public readonly record struct Str : IStdfRecord, ITestRecord
         return r;
     }
 
+    /// <summary>Serializes this <see cref="Str"/> to the specified writer.</summary>
     public void Serialize(IBufferWriter<byte> writer, Endianness endianness)
     {
         WriteByte(writer, ContinuationFlag);

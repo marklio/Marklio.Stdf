@@ -5,23 +5,33 @@ using System.Text;
 namespace Marklio.Stdf.Records;
 
 /// <summary>
-/// GDR — Generic Data Record (50, 10).
-/// Contains a variable-length list of typed fields using the STDF V*n encoding.
-/// Each field is preceded by a type byte indicating the data type.
+/// GDR — Generic Data Record (type 50, sub-type 10).
+/// Contains a list of arbitrarily-typed fields using the STDF V*n variable-type
+/// encoding. Each field is preceded by a type byte that determines the data type
+/// and wire format of the value that follows. Used for vendor-specific or generic
+/// data that does not fit other record types. This record is hand-implemented
+/// (not source-generated) because of the V*n encoding.
 /// </summary>
 public readonly record struct Gdr : IStdfRecord
 {
     static byte IStdfRecord.RecordType => 50;
     static byte IStdfRecord.RecordSubType => 10;
 
-    /// <summary>The generic data fields in this record.</summary>
+    /// <summary>
+    /// Array of generic typed fields. Each field is encoded on the wire as a type
+    /// byte followed by the value. The FLD_CNT (U*2) count is computed from the
+    /// array length.
+    /// [STDF: GEN_DATA, V*n]
+    /// </summary>
     public GdrField[] Fields { get; init; }
 
+    /// <summary>Initializes a new instance of the <see cref="Gdr"/> record.</summary>
     public Gdr()
     {
         Fields = [];
     }
 
+    /// <summary>Deserializes a <see cref="Gdr"/> from the specified reader.</summary>
     public static Gdr Deserialize(ref SequenceReader<byte> reader, Endianness endianness)
     {
         if (reader.Remaining < 2)
@@ -62,6 +72,7 @@ public readonly record struct Gdr : IStdfRecord
         return new Gdr { Fields = fields };
     }
 
+    /// <summary>Serializes this <see cref="Gdr"/> to the specified writer.</summary>
     public void Serialize(IBufferWriter<byte> writer, Endianness endianness)
     {
         var span = writer.GetSpan(2);
@@ -187,16 +198,69 @@ public readonly record struct Gdr : IStdfRecord
     { r.TryRead(out byte v); return new GdrField { Type = GdrFieldType.N1, Value = (byte)(v & 0x0F) }; }
 }
 
-/// <summary>Type code for GDR V*n fields.</summary>
+/// <summary>
+/// Type code for each field in a GDR V*n encoding. The value of the enum member
+/// matches the type byte written on the wire before the field data.
+/// </summary>
 public enum GdrFieldType : byte
 {
-    Padding = 0, U1 = 1, U2 = 2, U4 = 3, I1 = 4, I2 = 5, I4 = 6,
-    R4 = 7, R8 = 8, Cn = 10, Bn = 11, Dn = 12, N1 = 13,
+    /// <summary>Padding byte (type code 0). No data follows.</summary>
+    Padding = 0,
+
+    /// <summary>Unsigned 1-byte integer (type code 1). Wire type: U*1 → <see cref="byte"/>.</summary>
+    U1 = 1,
+
+    /// <summary>Unsigned 2-byte integer (type code 2). Wire type: U*2 → <see cref="ushort"/>.</summary>
+    U2 = 2,
+
+    /// <summary>Unsigned 4-byte integer (type code 3). Wire type: U*4 → <see cref="uint"/>.</summary>
+    U4 = 3,
+
+    /// <summary>Signed 1-byte integer (type code 4). Wire type: I*1 → <see cref="sbyte"/>.</summary>
+    I1 = 4,
+
+    /// <summary>Signed 2-byte integer (type code 5). Wire type: I*2 → <see cref="short"/>.</summary>
+    I2 = 5,
+
+    /// <summary>Signed 4-byte integer (type code 6). Wire type: I*4 → <see cref="int"/>.</summary>
+    I4 = 6,
+
+    /// <summary>IEEE 4-byte float (type code 7). Wire type: R*4 → <see cref="float"/>.</summary>
+    R4 = 7,
+
+    /// <summary>IEEE 8-byte double (type code 8). Wire type: R*8 → <see cref="double"/>.</summary>
+    R8 = 8,
+
+    /// <summary>Length-prefixed string (type code 10). Wire type: C*n (1-byte length + ASCII) → <see cref="string"/>.</summary>
+    Cn = 10,
+
+    /// <summary>Length-prefixed byte array (type code 11). Wire type: B*n (1-byte length + data) → <see langword="byte"/>[].</summary>
+    Bn = 11,
+
+    /// <summary>Bit-count-prefixed bit data (type code 12). Wire type: D*n (2-byte bit count + data) → <see cref="System.Collections.BitArray"/>.</summary>
+    Dn = 12,
+
+    /// <summary>Nibble — low 4 bits of a byte (type code 13). Wire type: N*1 → <see cref="byte"/>.</summary>
+    N1 = 13,
 }
 
-/// <summary>A single typed field within a GDR record.</summary>
+/// <summary>
+/// A single typed field within a GDR record. The <see cref="Type"/> discriminator
+/// indicates how <see cref="Value"/> should be interpreted and which CLR type is boxed.
+/// </summary>
 public readonly record struct GdrField
 {
+    /// <summary>
+    /// The data type of this field. Determines the wire encoding and the CLR type
+    /// of <see cref="Value"/>.
+    /// </summary>
     public GdrFieldType Type { get; init; }
+
+    /// <summary>
+    /// The field value, boxed to the CLR type indicated by <see cref="Type"/>
+    /// (e.g. <see cref="byte"/> for <see cref="GdrFieldType.U1"/>,
+    /// <see cref="string"/> for <see cref="GdrFieldType.Cn"/>, etc.).
+    /// <see langword="null"/> for <see cref="GdrFieldType.Padding"/>.
+    /// </summary>
     public object? Value { get; init; }
 }

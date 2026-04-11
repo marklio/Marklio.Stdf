@@ -109,6 +109,49 @@ public class ArrayRecordTests
     }
 
     [Fact]
+    public void Plr_SharedCount_MismatchedArrayLengths_DocumentsBehavior()
+    {
+        // When shared-count arrays have mismatched lengths, the first array's length
+        // becomes the wire count. Subsequent shorter arrays write fewer bytes than
+        // the count implies, causing deserialization to misinterpret the byte stream.
+        var plr = new Plr
+        {
+            GroupIndexes = [1, 2, 3],
+            GroupModes = [10, 20],
+            GroupRadixes = [0xAA, 0xBB, 0xCC],
+        };
+
+        // Serialize
+        var output = new ArrayBufferWriter<byte>();
+        plr.Serialize(output, Endianness.LittleEndian);
+        var bytes = output.WrittenSpan.ToArray();
+
+        // Wire count = 3 (from GroupIndexes, the first array in the group)
+        Assert.Equal(3, BitConverter.ToUInt16(bytes, 0));
+
+        // Total: 2 (count) + 6 (3×U16 GroupIndexes) + 4 (2×U16 GroupModes) + 3 (3×U8 GroupRadixes) = 15
+        // A properly matched PLR with count=3 would have 2 + 6 + 6 + 3 = 17
+        Assert.Equal(15, bytes.Length);
+
+        // Deserialization fails: all arrays use the shared count (3). GroupModes
+        // reads 3×U16 (6 bytes) but only 4 were written, consuming 2 bytes of
+        // GroupRadixes data. Then ReadU1Array for GroupRadixes tries to Advance(3)
+        // past the 1 remaining byte, causing SequenceReader to throw.
+        var seq = new ReadOnlySequence<byte>(bytes);
+        var reader = new SequenceReader<byte>(seq);
+        ArgumentOutOfRangeException? caught = null;
+        try
+        {
+            Plr.Deserialize(ref reader, Endianness.LittleEndian);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            caught = ex;
+        }
+        Assert.NotNull(caught);
+    }
+
+    [Fact]
     public void Eps_RoundTrip_EmptyRecord()
     {
         byte[] data = [];

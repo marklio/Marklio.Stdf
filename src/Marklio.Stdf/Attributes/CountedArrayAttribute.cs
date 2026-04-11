@@ -13,6 +13,11 @@ public sealed class CountedArrayAttribute : Attribute
     /// </summary>
     public string GroupName { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CountedArrayAttribute"/> class
+    /// with the specified group name.
+    /// </summary>
+    /// <param name="groupName">The group name linking this array to its corresponding <see cref="WireCountAttribute"/> count field.</param>
     public CountedArrayAttribute(string groupName)
     {
         GroupName = groupName;
