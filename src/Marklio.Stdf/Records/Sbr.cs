@@ -47,8 +47,4 @@ public partial record struct Sbr : IBinRecord
     /// [STDF: SBIN_NAM, C*n]
     /// </summary>
     public string? BinName { get; set; }
-
-    // IBinRecord explicit implementations — map generic names to SBR-specific properties
-    ushort IBinRecord.BinNumber => SoftwareBin;
-    char? IBinRecord.PassFail => BinPassFail;
 }
