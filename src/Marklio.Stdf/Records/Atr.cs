@@ -13,7 +13,10 @@ public partial record struct Atr
     /// <summary>
     /// Date and time of the file modification. [STDF: MOD_TIM, U*4]
     /// </summary>
-    /// <remarks>Wire format is a 32-bit unsigned Unix epoch timestamp, mapped to <see cref="DateTime"/> via the [StdfDateTime] attribute.</remarks>
+    /// <remarks>
+    /// Wire format is a 32-bit unsigned Unix epoch timestamp, mapped to <see cref="DateTime"/> via the [StdfDateTime] attribute.
+    /// Valid range: 1970-01-01T00:00:01Z to 2106-02-07T06:28:15Z. <c>default(DateTime)</c> maps to 0 ("not specified").
+    /// </remarks>
     [StdfDateTime] public DateTime ModifiedTime { get; set; }
 
     /// <summary>

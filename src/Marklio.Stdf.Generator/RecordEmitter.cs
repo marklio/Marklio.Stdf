@@ -545,6 +545,7 @@ internal static class RecordEmitter
     private static void WriteC1(System.Buffers.IBufferWriter<byte> w, char v) { var s = w.GetSpan(1); s[0] = (byte)v; w.Advance(1); }
     private static void WriteCn(System.Buffers.IBufferWriter<byte> w, string? v)
     {
+        if (v != null && v.Length > 255) throw new System.InvalidOperationException($""String length {v.Length} exceeds maximum Cn length of 255 characters."");
         byte len = (byte)(v?.Length ?? 0); var s = w.GetSpan(1 + len); s[0] = len;
         if (len > 0) System.Text.Encoding.ASCII.GetBytes(v!, s.Slice(1, len));
         w.Advance(1 + len);
@@ -565,12 +566,14 @@ internal static class RecordEmitter
     }
     private static void WriteBn(System.Buffers.IBufferWriter<byte> w, byte[]? v)
     {
+        if (v != null && v.Length > 255) throw new System.InvalidOperationException($""Byte array length {v.Length} exceeds maximum Bn length of 255 bytes."");
         byte len = (byte)(v?.Length ?? 0); var s = w.GetSpan(1 + len); s[0] = len;
         if (len > 0) v.AsSpan().CopyTo(s.Slice(1));
         w.Advance(1 + len);
     }
     private static void WriteDn(System.Buffers.IBufferWriter<byte> w, System.Collections.BitArray? v, Marklio.Stdf.Endianness e)
     {
+        if (v != null && v.Length > ushort.MaxValue) throw new System.InvalidOperationException($""BitArray length {v.Length} exceeds maximum Dn bit count of {ushort.MaxValue}."");
         ushort bc = (ushort)(v?.Length ?? 0); int byc = (bc + 7) / 8;
         var s = w.GetSpan(2 + byc);
         if (e == Marklio.Stdf.Endianness.LittleEndian) System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(s, bc);
@@ -581,7 +584,7 @@ internal static class RecordEmitter
     private static void WriteN1(System.Buffers.IBufferWriter<byte> w, byte v) { var s = w.GetSpan(1); s[0] = (byte)(v & 0x0F); w.Advance(1); }
     private static void WriteDateTime(System.Buffers.IBufferWriter<byte> w, System.DateTime v, Marklio.Stdf.Endianness e)
     {
-        uint secs = v == default ? 0u : (uint)(v.ToUniversalTime() - new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)).TotalSeconds;
+        uint secs = Marklio.Stdf.Types.StdfDateTime.ToStdf(v);
         WriteU4(w, secs, e);
     }
     private static void WriteU1Array(System.Buffers.IBufferWriter<byte> w, byte[] a) { var s = w.GetSpan(a.Length); a.AsSpan().CopyTo(s); w.Advance(a.Length); }

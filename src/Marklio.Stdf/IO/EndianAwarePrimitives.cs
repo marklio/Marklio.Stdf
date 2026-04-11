@@ -8,7 +8,6 @@ namespace Marklio.Stdf.IO;
 /// </summary>
 internal static class EndianAwarePrimitives
 {
-    private static readonly DateTime UnixEpoch = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     // --- Read ---
 
@@ -45,7 +44,7 @@ internal static class EndianAwarePrimitives
     public static DateTime ReadDateTime(ReadOnlySpan<byte> source, Endianness endianness)
     {
         uint seconds = ReadUInt32(source, endianness);
-        return seconds == 0 ? default : UnixEpoch.AddSeconds(seconds);
+        return Types.StdfDateTime.FromStdf(seconds);
     }
 
     // --- Write ---
@@ -100,7 +99,7 @@ internal static class EndianAwarePrimitives
 
     public static void WriteDateTime(Span<byte> destination, DateTime value, Endianness endianness)
     {
-        uint seconds = value == default ? 0u : (uint)(value.ToUniversalTime() - UnixEpoch).TotalSeconds;
+        uint seconds = Types.StdfDateTime.ToStdf(value);
         WriteUInt32(destination, seconds, endianness);
     }
 }
