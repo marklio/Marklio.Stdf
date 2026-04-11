@@ -14,53 +14,124 @@ A high-performance .NET 10 library for reading and writing [STDF](https://en.wik
 
 ## Quick start
 
+### Reading files
+
+Use `TryGetRecord<T>()` to match specific record types — this is the canonical pattern:
+
 ```csharp
 using Marklio.Stdf;
 using Marklio.Stdf.Records;
 
-// Read from a file (or .stdf.gz / .stdf.bz2)
+await foreach (var record in StdfFile.ReadAsync("data.stdf"))
+{
+    if (record.TryGetRecord<Mir>(out var mir))
+        Console.WriteLine($"Lot: {mir.LotId}");
+    else if (record.TryGetRecord<Ptr>(out var ptr))
+        Console.WriteLine($"Test {ptr.TestNumber}: {ptr.Result} {ptr.Units}");
+    else if (record.TryGetRecord<Prr>(out var prr))
+        Console.WriteLine($"Part {prr.PartId} — bin {prr.HardwareBin}");
+}
+```
+
+Use `Is<T>()` to match across record families via shared interfaces:
+
+```csharp
 await foreach (var rec in StdfFile.ReadAsync("wafer1.stdf"))
 {
-    if (rec.TryGetRecord<Ptr>(out var ptr))
-        Console.WriteLine($"Test {ptr.TestNumber}: {ptr.Result} {ptr.Units}");
-
-    // Pattern match across record families via Is<T>
     if (rec.Is<ITestRecord>(out var test))
         Console.WriteLine($"  Head {test.HeadNumber} Site {test.SiteNumber}");
 
     if (rec.Is<IBinRecord>(out var bin))
         Console.WriteLine($"Bin {bin.BinNumber}: {bin.BinCount} parts");
 }
-
-// Synchronous read from a byte array
-var data = File.ReadAllBytes("wafer1.stdf.gz"); // auto-decompresses
-foreach (var rec in StdfFile.Read(data))
-{
-    // ...
-}
 ```
 
-### Writing
+### Writing files
 
 ```csharp
-// Write a new file
 await using var writer = await StdfFile.OpenWriteAsync("output.stdf");
 await writer.WriteAsync(new Far { CpuType = 2, StdfVersion = 4 });
-await writer.WriteAsync(new Mir { SetupTime = DateTime.UtcNow, StartTime = DateTime.UtcNow, StationNumber = 1 });
-// ...
+await writer.WriteAsync(new Mir
+{
+    SetupTime = DateTime.UtcNow,
+    StartTime = DateTime.UtcNow,
+    StationNumber = 1,
+    LotId = "LOT001",
+    PartType = "SENSOR-A",
+    NodeName = "TESTER01",
+});
+await writer.WriteAsync(new Mrr { FinishTime = DateTime.UtcNow });
+```
 
-// Round-trip with modifications
+Round-trip with modifications (byte-exact for unmodified records):
+
+```csharp
 await using var w = await StdfFile.OpenWriteAsync("modified.stdf");
 await foreach (var rec in StdfFile.ReadAsync("input.stdf"))
 {
-    await w.WriteAsync(rec); // byte-exact for unmodified records
+    await w.WriteAsync(rec);
 }
+```
 
-// Write compressed
+Write compressed output:
+
+```csharp
 await using var wGz = await StdfFile.OpenWriteAsync("output.stdf.gz", new StdfWriterOptions
 {
     Compression = StdfCompression.Gzip,
 });
+```
+
+### Options and recovery mode
+
+By default, corrupt or truncated records throw `StdfParseException`. Enable
+recovery mode to skip over bad data and continue reading:
+
+```csharp
+var options = new StdfReaderOptions { RecoveryMode = true };
+await foreach (var record in StdfFile.ReadAsync("data.stdf", options))
+{
+    // Corrupt records are skipped instead of throwing
+}
+```
+
+You can also receive a callback for each skipped region:
+
+```csharp
+var options = new StdfReaderOptions
+{
+    RecoveryMode = true,
+    OnRecovery = e => Console.WriteLine($"Skipped {e}"),
+};
+```
+
+### Synchronous API
+
+Read from a byte array or `ReadOnlyMemory<byte>` — compression is auto-detected:
+
+```csharp
+var data = File.ReadAllBytes("wafer1.stdf.gz");
+foreach (var rec in StdfFile.Read(data))
+{
+    if (rec.TryGetRecord<Ptr>(out var ptr))
+        Console.WriteLine($"{ptr.TestNumber}: {ptr.Result}");
+}
+```
+
+### Error handling
+
+Without recovery mode, corrupt data throws `StdfParseException`:
+
+```csharp
+try
+{
+    await foreach (var rec in StdfFile.ReadAsync("bad.stdf"))
+    { /* ... */ }
+}
+catch (StdfParseException ex)
+{
+    Console.WriteLine($"Parse error at offset {ex.Message}");
+}
 ```
 
 ## API overview
