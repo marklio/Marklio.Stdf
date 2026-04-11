@@ -156,54 +156,72 @@ public readonly record struct Str : IStdfRecord, ITestRecord
 
     /// <summary>
     /// Byte width for cycle offset fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: CYC_SIZE, U*1]
     /// </summary>
     public byte? CycleSize { get; init; }
 
     /// <summary>
-    /// Byte width for PMR index fields.
+    /// Byte width for PMR index fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: PMR_SIZE, U*1]
     /// </summary>
     public byte? PmrSize { get; init; }
 
     /// <summary>
-    /// Byte width for chain number fields.
+    /// Byte width for chain number fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: CHN_SIZE, U*1]
     /// </summary>
     public byte? ChainSize { get; init; }
 
     /// <summary>
-    /// Byte width for pattern number fields.
+    /// Byte width for pattern number fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: PAT_SIZE, U*1]
     /// </summary>
     public byte? PatternSize { get; init; }
 
     /// <summary>
-    /// Byte width for bit position fields.
+    /// Byte width for bit position fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: BIT_SIZE, U*1]
     /// </summary>
     public byte? BitSize { get; init; }
 
     /// <summary>
-    /// Byte width for User1 fields.
+    /// Byte width for User1 fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: U1_SIZE, U*1]
     /// </summary>
     public byte? U1Size { get; init; }
 
     /// <summary>
-    /// Byte width for User2 fields.
+    /// Byte width for User2 fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: U2_SIZE, U*1]
     /// </summary>
     public byte? U2Size { get; init; }
 
     /// <summary>
-    /// Byte width for User3 fields.
+    /// Byte width for User3 fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: U3_SIZE, U*1]
     /// </summary>
     public byte? U3Size { get; init; }
 
     /// <summary>
-    /// Byte width for UserText index fields.
+    /// Byte width for UserText index fields (1/2/4/8).
+    /// Set this when creating records from scratch to match the required encoding width.
+    /// Preserved from deserialization for round-trip fidelity.
     /// [STDF: UTX_SIZE, U*1]
     /// </summary>
     public byte? UtxSize { get; init; }
@@ -233,10 +251,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public string[]? ConditionList { get; init; }
 
     /// <summary>
-    /// Number of cycle offset entries in this segment.
+    /// Number of cycle offset entries in this segment. Derived from <see cref="CycleOffsets"/>.
     /// [STDF: CYC_CNT, U*2]
     /// </summary>
-    public ushort? CycCnt { get; init; }
+    public ushort? CycCnt => (ushort?)CycleOffsets?.Length;
 
     /// <summary>
     /// Cycle offset values.
@@ -248,10 +266,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public ulong[]? CycleOffsets { get; init; }
 
     /// <summary>
-    /// Number of PMR index entries.
+    /// Number of PMR index entries. Derived from <see cref="PmrIndexes"/>.
     /// [STDF: PMR_CNT, U*2]
     /// </summary>
-    public ushort? PmrCnt { get; init; }
+    public ushort? PmrCnt => (ushort?)PmrIndexes?.Length;
 
     /// <summary>
     /// PMR indexes.
@@ -263,10 +281,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public ulong[]? PmrIndexes { get; init; }
 
     /// <summary>
-    /// Number of chain number entries.
+    /// Number of chain number entries. Derived from <see cref="ChainNumbers"/>.
     /// [STDF: CHN_CNT, U*2]
     /// </summary>
-    public ushort? ChnCnt { get; init; }
+    public ushort? ChnCnt => (ushort?)ChainNumbers?.Length;
 
     /// <summary>
     /// Chain numbers.
@@ -278,10 +296,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public ulong[]? ChainNumbers { get; init; }
 
     /// <summary>
-    /// Number of expected data bytes.
+    /// Number of expected data bytes. Derived from <see cref="ExpectedData"/>.
     /// [STDF: EXP_CNT, U*2]
     /// </summary>
-    public ushort? ExpCnt { get; init; }
+    public ushort? ExpCnt => (ushort?)ExpectedData?.Length;
 
     /// <summary>
     /// Expected compare data.
@@ -290,10 +308,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public byte[]? ExpectedData { get; init; }
 
     /// <summary>
-    /// Number of captured data bytes.
+    /// Number of captured data bytes. Derived from <see cref="CaptureData"/>.
     /// [STDF: CAP_CNT, U*2]
     /// </summary>
-    public ushort? CapCnt { get; init; }
+    public ushort? CapCnt => (ushort?)CaptureData?.Length;
 
     /// <summary>
     /// Captured data.
@@ -302,10 +320,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public byte[]? CaptureData { get; init; }
 
     /// <summary>
-    /// Number of new data bytes.
+    /// Number of new data bytes. Derived from <see cref="NewData"/>.
     /// [STDF: NEW_CNT, U*2]
     /// </summary>
-    public ushort? NewCnt { get; init; }
+    public ushort? NewCnt => (ushort?)NewData?.Length;
 
     /// <summary>
     /// New (repaired) data.
@@ -314,10 +332,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public byte[]? NewData { get; init; }
 
     /// <summary>
-    /// Number of pattern number entries.
+    /// Number of pattern number entries. Derived from <see cref="PatternNumbers"/>.
     /// [STDF: PAT_CNT, U*2]
     /// </summary>
-    public ushort? PatCnt { get; init; }
+    public ushort? PatCnt => (ushort?)PatternNumbers?.Length;
 
     /// <summary>
     /// Pattern numbers.
@@ -329,10 +347,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public ulong[]? PatternNumbers { get; init; }
 
     /// <summary>
-    /// Number of bit position entries.
+    /// Number of bit position entries. Derived from <see cref="BitPositions"/>.
     /// [STDF: BPOS_CNT, U*2]
     /// </summary>
-    public ushort? BposCnt { get; init; }
+    public ushort? BposCnt => (ushort?)BitPositions?.Length;
 
     /// <summary>
     /// Bit positions.
@@ -344,10 +362,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public ulong[]? BitPositions { get; init; }
 
     /// <summary>
-    /// Number of User1 entries.
+    /// Number of User1 entries. Derived from <see cref="User1"/>.
     /// [STDF: USR1_CNT, U*2]
     /// </summary>
-    public ushort? Usr1Cnt { get; init; }
+    public ushort? Usr1Cnt => (ushort?)User1?.Length;
 
     /// <summary>
     /// User-defined data 1.
@@ -359,10 +377,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public ulong[]? User1 { get; init; }
 
     /// <summary>
-    /// Number of User2 entries.
+    /// Number of User2 entries. Derived from <see cref="User2"/>.
     /// [STDF: USR2_CNT, U*2]
     /// </summary>
-    public ushort? Usr2Cnt { get; init; }
+    public ushort? Usr2Cnt => (ushort?)User2?.Length;
 
     /// <summary>
     /// User-defined data 2.
@@ -374,10 +392,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public ulong[]? User2 { get; init; }
 
     /// <summary>
-    /// Number of User3 entries.
+    /// Number of User3 entries. Derived from <see cref="User3"/>.
     /// [STDF: USR3_CNT, U*2]
     /// </summary>
-    public ushort? Usr3Cnt { get; init; }
+    public ushort? Usr3Cnt => (ushort?)User3?.Length;
 
     /// <summary>
     /// User-defined data 3.
@@ -389,10 +407,10 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     public ulong[]? User3 { get; init; }
 
     /// <summary>
-    /// Number of user text entries.
+    /// Number of user text entries. Derived from <see cref="UserText"/>.
     /// [STDF: TXT_CNT, U*2]
     /// </summary>
-    public ushort? TxtCnt { get; init; }
+    public ushort? TxtCnt => (ushort?)UserText?.Length;
 
     /// <summary>
     /// User text entries.
@@ -529,31 +547,34 @@ public readonly record struct Str : IStdfRecord, ITestRecord
         }
 
         // Variable-width counted arrays
-        r = ReadVarArray(ref reader, r, endianness, cycSize, s => s with { CycCnt = null }, (s, cnt) => s with { CycCnt = cnt }, (s, arr) => s with { CycleOffsets = arr });
-        r = ReadVarArray(ref reader, r, endianness, pmrSize, s => s with { PmrCnt = null }, (s, cnt) => s with { PmrCnt = cnt }, (s, arr) => s with { PmrIndexes = arr });
-        r = ReadVarArray(ref reader, r, endianness, chnSize, s => s with { ChnCnt = null }, (s, cnt) => s with { ChnCnt = cnt }, (s, arr) => s with { ChainNumbers = arr });
+        r = ReadVarArray(ref reader, r, endianness, cycSize, (s, arr) => s with { CycleOffsets = arr });
+        r = ReadVarArray(ref reader, r, endianness, pmrSize, (s, arr) => s with { PmrIndexes = arr });
+        r = ReadVarArray(ref reader, r, endianness, chnSize, (s, arr) => s with { ChainNumbers = arr });
 
         // EXP_DATA: byte arrays
-        r = ReadByteCountedArray(ref reader, r, endianness, s => s with { ExpCnt = null }, (s, cnt) => s with { ExpCnt = cnt }, (s, arr) => s with { ExpectedData = arr });
-        r = ReadByteCountedArray(ref reader, r, endianness, s => s with { CapCnt = null }, (s, cnt) => s with { CapCnt = cnt }, (s, arr) => s with { CaptureData = arr });
-        r = ReadByteCountedArray(ref reader, r, endianness, s => s with { NewCnt = null }, (s, cnt) => s with { NewCnt = cnt }, (s, arr) => s with { NewData = arr });
+        r = ReadByteCountedArray(ref reader, r, endianness, (s, arr) => s with { ExpectedData = arr });
+        r = ReadByteCountedArray(ref reader, r, endianness, (s, arr) => s with { CaptureData = arr });
+        r = ReadByteCountedArray(ref reader, r, endianness, (s, arr) => s with { NewData = arr });
 
-        r = ReadVarArray(ref reader, r, endianness, patSize, s => s with { PatCnt = null }, (s, cnt) => s with { PatCnt = cnt }, (s, arr) => s with { PatternNumbers = arr });
-        r = ReadVarArray(ref reader, r, endianness, bitSize, s => s with { BposCnt = null }, (s, cnt) => s with { BposCnt = cnt }, (s, arr) => s with { BitPositions = arr });
-        r = ReadVarArray(ref reader, r, endianness, u1Size, s => s with { Usr1Cnt = null }, (s, cnt) => s with { Usr1Cnt = cnt }, (s, arr) => s with { User1 = arr });
-        r = ReadVarArray(ref reader, r, endianness, u2Size, s => s with { Usr2Cnt = null }, (s, cnt) => s with { Usr2Cnt = cnt }, (s, arr) => s with { User2 = arr });
-        r = ReadVarArray(ref reader, r, endianness, u3Size, s => s with { Usr3Cnt = null }, (s, cnt) => s with { Usr3Cnt = cnt }, (s, arr) => s with { User3 = arr });
+        r = ReadVarArray(ref reader, r, endianness, patSize, (s, arr) => s with { PatternNumbers = arr });
+        r = ReadVarArray(ref reader, r, endianness, bitSize, (s, arr) => s with { BitPositions = arr });
+        r = ReadVarArray(ref reader, r, endianness, u1Size, (s, arr) => s with { User1 = arr });
+        r = ReadVarArray(ref reader, r, endianness, u2Size, (s, arr) => s with { User2 = arr });
+        r = ReadVarArray(ref reader, r, endianness, u3Size, (s, arr) => s with { User3 = arr });
 
         // TXT_CNT + USER_TXT (C*f with UTX_SIZE determining fixed string length)
         if (reader.Remaining >= 2)
         {
             ushort txtCnt = ReadU2(ref reader, endianness);
-            r = r with { TxtCnt = txtCnt };
             if (txtCnt > 0 && utxSize > 0 && reader.Remaining >= txtCnt * utxSize)
             {
                 var txt = new string[txtCnt];
                 for (int i = 0; i < txtCnt; i++) txt[i] = ReadCf(ref reader, utxSize);
                 r = r with { UserText = txt };
+            }
+            else
+            {
+                r = r with { UserText = Array.Empty<string>() };
             }
         }
 
@@ -627,74 +648,84 @@ public readonly record struct Str : IStdfRecord, ITestRecord
         if (condCnt > 0 && ConditionList != null)
             foreach (var v in ConditionList) WriteCn(writer, v);
 
-        WriteVarArray(writer, CycCnt, CycleOffsets, cycSz, endianness);
-        WriteVarArray(writer, PmrCnt, PmrIndexes, pmrSz, endianness);
-        WriteVarArray(writer, ChnCnt, ChainNumbers, chnSz, endianness);
+        WriteVarArray(writer, CycleOffsets, cycSz, endianness);
+        WriteVarArray(writer, PmrIndexes, pmrSz, endianness);
+        WriteVarArray(writer, ChainNumbers, chnSz, endianness);
 
-        WriteByteCountedArray(writer, ExpCnt, ExpectedData, endianness);
-        WriteByteCountedArray(writer, CapCnt, CaptureData, endianness);
-        WriteByteCountedArray(writer, NewCnt, NewData, endianness);
+        WriteByteCountedArray(writer, ExpectedData, endianness);
+        WriteByteCountedArray(writer, CaptureData, endianness);
+        WriteByteCountedArray(writer, NewData, endianness);
 
-        WriteVarArray(writer, PatCnt, PatternNumbers, patSz, endianness);
-        WriteVarArray(writer, BposCnt, BitPositions, bitSz, endianness);
-        WriteVarArray(writer, Usr1Cnt, User1, u1Sz, endianness);
-        WriteVarArray(writer, Usr2Cnt, User2, u2Sz, endianness);
-        WriteVarArray(writer, Usr3Cnt, User3, u3Sz, endianness);
+        WriteVarArray(writer, PatternNumbers, patSz, endianness);
+        WriteVarArray(writer, BitPositions, bitSz, endianness);
+        WriteVarArray(writer, User1, u1Sz, endianness);
+        WriteVarArray(writer, User2, u2Sz, endianness);
+        WriteVarArray(writer, User3, u3Sz, endianness);
 
-        if (!TxtCnt.HasValue) return;
-        ushort txtCnt = TxtCnt.Value;
+        if (UserText == null) return;
+        ushort txtCnt = (ushort)UserText.Length;
+        if (txtCnt > 0 && utxSz == 0)
+            throw new InvalidOperationException("UtxSize must be set when UserText is non-empty.");
         WriteU2(writer, txtCnt, endianness);
-        if (txtCnt > 0 && UserText != null && utxSz > 0)
+        if (txtCnt > 0)
             foreach (var v in UserText) WriteCf(writer, v, utxSz);
     }
 
     // --- Helper: read variable-width integer array ---
     private static Str ReadVarArray(
         ref SequenceReader<byte> reader, Str r, Endianness e, byte elemSize,
-        Func<Str, Str> clearCnt, Func<Str, ushort, Str> setCnt, Func<Str, ulong[], Str> setArr)
+        Func<Str, ulong[], Str> setArr)
     {
         if (reader.Remaining < 2) return r;
         ushort cnt = ReadU2(ref reader, e);
-        r = setCnt(r, cnt);
         if (cnt > 0 && elemSize > 0 && reader.Remaining >= cnt * elemSize)
         {
             var arr = new ulong[cnt];
             for (int i = 0; i < cnt; i++) arr[i] = ReadUf(ref reader, e, elemSize);
             r = setArr(r, arr);
         }
+        else
+        {
+            r = setArr(r, Array.Empty<ulong>());
+        }
         return r;
     }
 
     private static Str ReadByteCountedArray(
         ref SequenceReader<byte> reader, Str r, Endianness e,
-        Func<Str, Str> clearCnt, Func<Str, ushort, Str> setCnt, Func<Str, byte[], Str> setArr)
+        Func<Str, byte[], Str> setArr)
     {
         if (reader.Remaining < 2) return r;
         ushort cnt = ReadU2(ref reader, e);
-        r = setCnt(r, cnt);
         if (cnt > 0 && reader.Remaining >= cnt)
         {
             var arr = new byte[cnt];
             for (int i = 0; i < cnt; i++) reader.TryRead(out arr[i]);
             r = setArr(r, arr);
         }
+        else
+        {
+            r = setArr(r, Array.Empty<byte>());
+        }
         return r;
     }
 
     // --- Helper: write variable-width integer array ---
-    private static void WriteVarArray(IBufferWriter<byte> writer, ushort? cnt, ulong[]? arr, byte elemSize, Endianness e)
+    private static void WriteVarArray(IBufferWriter<byte> writer, ulong[]? arr, byte elemSize, Endianness e)
     {
-        if (!cnt.HasValue) return;
-        WriteU2(writer, cnt.Value, e);
-        if (arr != null && elemSize > 0)
+        if (arr == null) return;
+        if (arr.Length > 0 && elemSize == 0)
+            throw new InvalidOperationException("Element size must be set when array is non-empty.");
+        WriteU2(writer, (ushort)arr.Length, e);
+        if (arr.Length > 0)
             foreach (var v in arr) WriteUf(writer, v, e, elemSize);
     }
 
-    private static void WriteByteCountedArray(IBufferWriter<byte> writer, ushort? cnt, byte[]? arr, Endianness e)
+    private static void WriteByteCountedArray(IBufferWriter<byte> writer, byte[]? arr, Endianness e)
     {
-        if (!cnt.HasValue) return;
-        WriteU2(writer, cnt.Value, e);
-        if (arr != null)
+        if (arr == null) return;
+        WriteU2(writer, (ushort)arr.Length, e);
+        if (arr.Length > 0)
         {
             var s = writer.GetSpan(arr.Length);
             arr.AsSpan().CopyTo(s);
