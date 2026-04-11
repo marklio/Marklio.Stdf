@@ -150,7 +150,7 @@ public static class StdfFile
                         break;
                     continue;
                 }
-                break; // truncated
+                throw new StdfParseException("Truncated record: not enough data for the declared record length.", reader.Consumed - 4);
             }
 
             long payloadStart = reader.Consumed;

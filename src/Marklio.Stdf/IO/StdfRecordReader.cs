@@ -82,7 +82,7 @@ internal sealed class StdfRecordReader
                             if (skipped < 0) yield break;
                             continue;
                         }
-                        yield break; // truncated record at end of stream
+                        throw new StdfParseException("Truncated record: not enough data for the declared record length.", _bytesConsumed);
                     }
                     break; // need more data
                 }
