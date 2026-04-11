@@ -245,7 +245,16 @@ internal static class RecordEmitter
         foreach (var wc in wireCountFields)
         {
             if (wc.WireCountGroup != null && groupFirstArray.TryGetValue(wc.WireCountGroup, out var arrayProp))
-                sb.AppendLine($"        ushort _wireCount_{wc.WireCountGroup} = (ushort)({arrayProp}?.Length ?? 0);");
+            {
+                int maxCount = wc.StdfType == StdfFieldType.WireCountU1 ? 255 : 65535;
+                sb.AppendLine($"        int _rawCount_{wc.WireCountGroup} = {arrayProp}?.Length ?? 0;");
+                if (wc.StdfType != StdfFieldType.WireCountU4)
+                {
+                    sb.AppendLine($"        if (_rawCount_{wc.WireCountGroup} > {maxCount})");
+                    sb.AppendLine($"            throw new System.InvalidOperationException($\"Array length {{_rawCount_{wc.WireCountGroup}}} exceeds maximum count of {maxCount} for wire count group '{wc.WireCountGroup}'.\");");
+                }
+                sb.AppendLine($"        ushort _wireCount_{wc.WireCountGroup} = (ushort)_rawCount_{wc.WireCountGroup};");
+            }
         }
 
         string suffix = fields.Count > 32 ? "UL" : "u";
