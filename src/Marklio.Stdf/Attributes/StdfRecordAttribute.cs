@@ -13,6 +13,12 @@ public sealed class StdfRecordAttribute : Attribute
     /// <summary>STDF record sub-type code (REC_SUB).</summary>
     public byte RecordSubType { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StdfRecordAttribute"/> class
+    /// with the specified STDF record type and sub-type codes.
+    /// </summary>
+    /// <param name="recordType">The STDF record type code (REC_TYP).</param>
+    /// <param name="recordSubType">The STDF record sub-type code (REC_SUB).</param>
     public StdfRecordAttribute(byte recordType, byte recordSubType)
     {
         RecordType = recordType;

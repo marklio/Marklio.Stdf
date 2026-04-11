@@ -4,11 +4,14 @@ namespace Marklio.Stdf.Records;
 
 /// <summary>
 /// DTR — Datalog Text Record (50, 30).
-/// Contains a single line of text for the datalog.
+/// Contains free-form text for the data log.
 /// </summary>
 [StdfRecord(50, 30)]
 public partial record struct Dtr
 {
-    /// <summary>Text data.</summary>
+    /// <summary>
+    /// The datalog text. Always present (non-optional).
+    /// [STDF: TEXT_DAT, C*n]
+    /// </summary>
     public string TextData { get; set; }
 }

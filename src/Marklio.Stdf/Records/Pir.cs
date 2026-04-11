@@ -4,14 +4,18 @@ namespace Marklio.Stdf.Records;
 
 /// <summary>
 /// PIR — Part Information Record (5, 10).
-/// Marks the beginning of a new part test sequence.
+/// Marks the beginning of a part (device) test. One per part tested.
 /// </summary>
 [StdfRecord(5, 10)]
 public partial record struct Pir : IHeadSiteRecord
 {
-    /// <summary>Test head number.</summary>
+    /// <summary>
+    /// Test head number. [STDF: HEAD_NUM, U*1]
+    /// </summary>
     public byte HeadNumber { get; set; }
 
-    /// <summary>Test site number.</summary>
+    /// <summary>
+    /// Test site number. [STDF: SITE_NUM, U*1]
+    /// </summary>
     public byte SiteNumber { get; set; }
 }

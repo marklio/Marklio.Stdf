@@ -3,16 +3,21 @@ using Marklio.Stdf.Attributes;
 namespace Marklio.Stdf.Records;
 
 /// <summary>
-/// FAR — File Attributes Record (0, 10).
-/// Must be the first record in every STDF file.
-/// Identifies the CPU type (endianness) and STDF version.
+/// File Attributes Record (FAR) — type 0, subtype 10.
+/// Must be the first record in every STDF file. Identifies the CPU type
+/// (byte ordering) and STDF specification version used by the file.
 /// </summary>
 [StdfRecord(0, 10)]
 public partial record struct Far
 {
-    /// <summary>CPU type that wrote this file (1=big-endian, 2=little-endian).</summary>
+    /// <summary>
+    /// CPU type that wrote the file (1 = big-endian, e.g. SPARC; 2 = little-endian, e.g. x86).
+    /// Used to determine byte ordering for all subsequent records. [STDF: CPU_TYP, U*1]
+    /// </summary>
     public byte CpuType { get; set; }
 
-    /// <summary>STDF version number (4 for V4).</summary>
+    /// <summary>
+    /// STDF specification version number (always 4 for V4 files). [STDF: STDF_VER, U*1]
+    /// </summary>
     public byte StdfVersion { get; set; }
 }
