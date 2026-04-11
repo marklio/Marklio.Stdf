@@ -16,6 +16,24 @@ public static class ContinuationMerger
     /// Non-continuation records pass through unchanged. Merged records lose their
     /// <see cref="StdfRecord.TrailingData"/> and byte-exact round-trip fidelity.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// PSR and STR records in STDF V4-2007 may span multiple physical records using a
+    /// continuation flag. This method reassembles those multi-segment sequences into
+    /// single logical records so callers can iterate without tracking continuation state.
+    /// </para>
+    /// <para>
+    /// <strong>Warning:</strong> Merged records do <em>not</em> preserve
+    /// <see cref="StdfRecord.TrailingData"/> from individual continuation segments.
+    /// Any trailing bytes present in the original segments are silently dropped during
+    /// the merge. This means that writing merged records back to a file will
+    /// <em>not</em> produce a byte-exact copy of the original file.
+    /// </para>
+    /// <para>
+    /// If byte-exact round-trip fidelity is required, do <em>not</em> use this method.
+    /// Instead, iterate the raw <see cref="StdfRecord"/> stream directly.
+    /// </para>
+    /// </remarks>
     public static async IAsyncEnumerable<StdfRecord> MergeContinuations(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -72,6 +90,24 @@ public static class ContinuationMerger
     /// <summary>
     /// Synchronous version of <see cref="MergeContinuations(IAsyncEnumerable{StdfRecord}, CancellationToken)"/>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// PSR and STR records in STDF V4-2007 may span multiple physical records using a
+    /// continuation flag. This method reassembles those multi-segment sequences into
+    /// single logical records so callers can iterate without tracking continuation state.
+    /// </para>
+    /// <para>
+    /// <strong>Warning:</strong> Merged records do <em>not</em> preserve
+    /// <see cref="StdfRecord.TrailingData"/> from individual continuation segments.
+    /// Any trailing bytes present in the original segments are silently dropped during
+    /// the merge. This means that writing merged records back to a file will
+    /// <em>not</em> produce a byte-exact copy of the original file.
+    /// </para>
+    /// <para>
+    /// If byte-exact round-trip fidelity is required, do <em>not</em> use this method.
+    /// Instead, iterate the raw <see cref="StdfRecord"/> stream directly.
+    /// </para>
+    /// </remarks>
     public static IEnumerable<StdfRecord> MergeContinuations(this IEnumerable<StdfRecord> source)
     {
         List<Psr>? psrBuffer = null;

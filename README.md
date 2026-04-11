@@ -21,14 +21,14 @@ using Marklio.Stdf.Records;
 // Read from a file (or .stdf.gz / .stdf.bz2)
 await foreach (var rec in StdfFile.ReadAsync("wafer1.stdf"))
 {
-    if (rec.Record is Ptr ptr)
+    if (rec.TryGetRecord<Ptr>(out var ptr))
         Console.WriteLine($"Test {ptr.TestNumber}: {ptr.Result} {ptr.Units}");
 
-    // Pattern match across record families
-    if (rec.Record is ITestRecord test)
+    // Pattern match across record families via Is<T>
+    if (rec.Is<ITestRecord>(out var test))
         Console.WriteLine($"  Head {test.HeadNumber} Site {test.SiteNumber}");
 
-    if (rec.Record is IBinRecord bin)
+    if (rec.Is<IBinRecord>(out var bin))
         Console.WriteLine($"Bin {bin.BinNumber}: {bin.BinCount} parts");
 }
 
@@ -83,6 +83,34 @@ IHeadRecord              — HeadNumber
        ├─ IBinRecord      — + BinNumber, BinCount, PassFail, BinName
        └─ ITestRecord     — + TestNumber
 ```
+
+## Continuation merging
+
+STDF V4-2007 introduced PSR (Pattern Sequence Record) and STR (Scan Test Record) types
+that can span multiple physical STDF records via a continuation flag. The
+`MergeContinuations()` extension method reassembles these multi-segment sequences into
+single logical records, making downstream analysis simpler.
+
+```csharp
+// Async — merged records are yielded as single PSR/STR instances
+await foreach (var rec in StdfFile.ReadAsync("data.stdf").MergeContinuations())
+{
+    if (rec.Record is Psr psr)
+        Console.WriteLine($"PSR {psr.PsrIndex}: {psr.PatternLabels?.Length} patterns");
+}
+
+// Synchronous equivalent
+foreach (var rec in StdfFile.Read(bytes).MergeContinuations())
+{
+    // ...
+}
+```
+
+> **⚠️ TrailingData is not preserved.**
+> Merged records do **not** retain `TrailingData` from individual continuation segments.
+> Files written after merging will **not** be byte-exact copies of the original.
+> If byte-exact round-tripping is required, iterate the raw record stream directly
+> without calling `MergeContinuations()`.
 
 ## Requirements
 
