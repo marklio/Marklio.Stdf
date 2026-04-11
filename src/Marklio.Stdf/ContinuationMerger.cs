@@ -16,6 +16,24 @@ public static class ContinuationMerger
     /// Non-continuation records pass through unchanged. Merged records lose their
     /// <see cref="StdfRecord.TrailingData"/> and byte-exact round-trip fidelity.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// PSR and STR records in STDF V4-2007 may span multiple physical records using a
+    /// continuation flag. This method reassembles those multi-segment sequences into
+    /// single logical records so callers can iterate without tracking continuation state.
+    /// </para>
+    /// <para>
+    /// <strong>Warning:</strong> Merged records do <em>not</em> preserve
+    /// <see cref="StdfRecord.TrailingData"/> from individual continuation segments.
+    /// Any trailing bytes present in the original segments are silently dropped during
+    /// the merge. This means that writing merged records back to a file will
+    /// <em>not</em> produce a byte-exact copy of the original file.
+    /// </para>
+    /// <para>
+    /// If byte-exact round-trip fidelity is required, do <em>not</em> use this method.
+    /// Instead, iterate the raw <see cref="StdfRecord"/> stream directly.
+    /// </para>
+    /// </remarks>
     public static async IAsyncEnumerable<StdfRecord> MergeContinuations(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -72,6 +90,24 @@ public static class ContinuationMerger
     /// <summary>
     /// Synchronous version of <see cref="MergeContinuations(IAsyncEnumerable{StdfRecord}, CancellationToken)"/>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// PSR and STR records in STDF V4-2007 may span multiple physical records using a
+    /// continuation flag. This method reassembles those multi-segment sequences into
+    /// single logical records so callers can iterate without tracking continuation state.
+    /// </para>
+    /// <para>
+    /// <strong>Warning:</strong> Merged records do <em>not</em> preserve
+    /// <see cref="StdfRecord.TrailingData"/> from individual continuation segments.
+    /// Any trailing bytes present in the original segments are silently dropped during
+    /// the merge. This means that writing merged records back to a file will
+    /// <em>not</em> produce a byte-exact copy of the original file.
+    /// </para>
+    /// <para>
+    /// If byte-exact round-trip fidelity is required, do <em>not</em> use this method.
+    /// Instead, iterate the raw <see cref="StdfRecord"/> stream directly.
+    /// </para>
+    /// </remarks>
     public static IEnumerable<StdfRecord> MergeContinuations(this IEnumerable<StdfRecord> source)
     {
         List<Psr>? psrBuffer = null;
@@ -187,29 +223,17 @@ public static class ContinuationMerger
             LimitIndexes = first.LimitIndexes,
             LimitSpecs = first.LimitSpecs,
             ConditionList = ConcatArrays(segments, s => s.ConditionList),
-            CycCnt = SumCounts(segments, s => s.CycCnt),
             CycleOffsets = ConcatArrays(segments, s => s.CycleOffsets),
-            PmrCnt = SumCounts(segments, s => s.PmrCnt),
             PmrIndexes = ConcatArrays(segments, s => s.PmrIndexes),
-            ChnCnt = SumCounts(segments, s => s.ChnCnt),
             ChainNumbers = ConcatArrays(segments, s => s.ChainNumbers),
-            ExpCnt = SumCounts(segments, s => s.ExpCnt),
             ExpectedData = ConcatByteArrays(segments, s => s.ExpectedData),
-            CapCnt = SumCounts(segments, s => s.CapCnt),
             CaptureData = ConcatByteArrays(segments, s => s.CaptureData),
-            NewCnt = SumCounts(segments, s => s.NewCnt),
             NewData = ConcatByteArrays(segments, s => s.NewData),
-            PatCnt = SumCounts(segments, s => s.PatCnt),
             PatternNumbers = ConcatArrays(segments, s => s.PatternNumbers),
-            BposCnt = SumCounts(segments, s => s.BposCnt),
             BitPositions = ConcatArrays(segments, s => s.BitPositions),
-            Usr1Cnt = SumCounts(segments, s => s.Usr1Cnt),
             User1 = ConcatArrays(segments, s => s.User1),
-            Usr2Cnt = SumCounts(segments, s => s.Usr2Cnt),
             User2 = ConcatArrays(segments, s => s.User2),
-            Usr3Cnt = SumCounts(segments, s => s.Usr3Cnt),
             User3 = ConcatArrays(segments, s => s.User3),
-            TxtCnt = SumCounts(segments, s => s.TxtCnt),
             UserText = ConcatArrays(segments, s => s.UserText),
         };
     }

@@ -18,10 +18,16 @@ internal static class CompressionHelper
     /// <summary>
     /// Detects compression from magic bytes at the start of a seekable stream.
     /// Resets the stream position afterward.
+    /// Non-seekable streams return <see cref="StdfCompression.None"/> because
+    /// length/position are unavailable; callers must pre-decompress or specify
+    /// compression explicitly.
     /// </summary>
     public static StdfCompression Detect(Stream stream)
     {
-        if (!stream.CanRead || stream.Length < 2)
+        if (!stream.CanRead || !stream.CanSeek)
+            return StdfCompression.None;
+
+        if (stream.Length < 2)
             return StdfCompression.None;
 
         long pos = stream.Position;
@@ -62,13 +68,18 @@ internal static class CompressionHelper
     /// Wraps a read stream with decompression if compression is detected.
     /// Returns the original stream if uncompressed.
     /// </summary>
-    public static Stream WrapForReading(Stream stream)
+    /// <param name="stream">The stream to read from.</param>
+    /// <param name="leaveOpen">
+    /// If <c>true</c>, the inner <paramref name="stream"/> is not closed
+    /// when the decompression wrapper is disposed.
+    /// </param>
+    public static Stream WrapForReading(Stream stream, bool leaveOpen = false)
     {
         var compression = Detect(stream);
         return compression switch
         {
-            StdfCompression.Gzip => new GZipStream(stream, CompressionMode.Decompress, leaveOpen: false),
-            StdfCompression.Bzip2 => new BZip2InputStream(stream) { IsStreamOwner = false },
+            StdfCompression.Gzip => new GZipStream(stream, CompressionMode.Decompress, leaveOpen: leaveOpen),
+            StdfCompression.Bzip2 => new BZip2InputStream(stream) { IsStreamOwner = !leaveOpen },
             _ => stream,
         };
     }
@@ -102,12 +113,18 @@ internal static class CompressionHelper
     /// <summary>
     /// Wraps a write stream with compression.
     /// </summary>
-    public static Stream WrapForWriting(Stream stream, StdfCompression compression)
+    /// <param name="stream">The stream to write to.</param>
+    /// <param name="compression">The compression algorithm to use.</param>
+    /// <param name="leaveOpen">
+    /// If <c>true</c>, the inner <paramref name="stream"/> is not closed
+    /// when the compression wrapper is disposed.
+    /// </param>
+    public static Stream WrapForWriting(Stream stream, StdfCompression compression, bool leaveOpen = false)
     {
         return compression switch
         {
-            StdfCompression.Gzip => new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: false),
-            StdfCompression.Bzip2 => new BZip2OutputStream(stream) { IsStreamOwner = false },
+            StdfCompression.Gzip => new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: leaveOpen),
+            StdfCompression.Bzip2 => new BZip2OutputStream(stream) { IsStreamOwner = !leaveOpen },
             _ => stream,
         };
     }

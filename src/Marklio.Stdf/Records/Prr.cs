@@ -71,4 +71,7 @@ public partial record struct Prr : IHeadSiteRecord
     /// </summary>
     /// <remarks>Wire format is a length-prefixed byte array, mapped via the [BitEncoded] attribute.</remarks>
     [BitEncoded] public byte[]? PartFix { get; set; }
+
+    /// <summary>Gets <see cref="PartFlag"/> as a typed enum. See <see cref="PartFlag"/> for the raw value.</summary>
+    public PartResultFlags PartFlagEnum => (PartResultFlags)PartFlag;
 }

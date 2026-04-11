@@ -31,6 +31,8 @@ internal sealed class StdfRecordWriter : IAsyncDisposable
         int totalPayload = payloadBuffer.WrittenCount + trailingLen;
 
         // Write 4-byte header: REC_LEN (U*2) + REC_TYP (U*1) + REC_SUB (U*1)
+        if (totalPayload > ushort.MaxValue)
+            throw new InvalidOperationException($"Record payload size {totalPayload} exceeds maximum STDF record length of {ushort.MaxValue} bytes.");
         var recLen = (ushort)totalPayload;
         var headerSpan = _pipeWriter.GetSpan(4);
         if (_endianness == Endianness.LittleEndian)

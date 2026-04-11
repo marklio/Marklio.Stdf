@@ -119,6 +119,20 @@ public class CompressionTests
         }
     }
 
+    [Fact]
+    public async Task AsyncRead_NonSeekableStream_DoesNotThrow()
+    {
+        var plainData = SyntheticStdf.SmallLe.Value;
+        using var inner = new MemoryStream(plainData);
+        using var nonSeekable = new NonSeekableStream(inner);
+
+        var records = await StdfFile.ReadAsync(nonSeekable).ToListAsync();
+
+        Assert.NotEmpty(records);
+        Assert.Equal((byte)0, records[0].RecordType);   // FAR
+        Assert.Equal((byte)10, records[0].RecordSubType);
+    }
+
     private static byte[] Compress(byte[] data, StdfCompression compression)
     {
         using var ms = new MemoryStream();
@@ -139,4 +153,24 @@ internal static class AsyncEnumerableExtensions
             list.Add(item);
         return list;
     }
+}
+
+/// <summary>
+/// Wraps a stream to simulate a non-seekable source (e.g., network or pipe stream).
+/// </summary>
+internal sealed class NonSeekableStream : Stream
+{
+    private readonly Stream _inner;
+    public NonSeekableStream(Stream inner) => _inner = inner;
+    public override bool CanSeek => false;
+    public override bool CanRead => _inner.CanRead;
+    public override bool CanWrite => _inner.CanWrite;
+    public override long Length => throw new NotSupportedException();
+    public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+    public override void Flush() => _inner.Flush();
+    public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+    protected override void Dispose(bool disposing) { if (disposing) _inner.Dispose(); base.Dispose(disposing); }
 }

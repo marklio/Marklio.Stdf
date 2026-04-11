@@ -13,30 +13,39 @@ public class StdfRecordGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var recordTypes = context.SyntaxProvider
+        var recordProvider = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 "Marklio.Stdf.Attributes.StdfRecordAttribute",
                 predicate: (node, _) => node is TypeDeclarationSyntax,
                 transform: (ctx, _) => RecordAnalyzer.Analyze(ctx))
-            .Where(m => m is not null)
-            .Select((m, _) => m!)
-            .Collect();
+            .Where(r => r is not null)
+            .Select((r, _) => r!);
 
-        context.RegisterSourceOutput(recordTypes, static (ctx, records) => EmitGeneratedCode(ctx, records));
-    }
-
-    private static void EmitGeneratedCode(SourceProductionContext context, ImmutableArray<RecordMetadata> records)
-    {
-        foreach (var record in records)
+        // Per-record output: only re-runs when that specific record changes
+        context.RegisterSourceOutput(recordProvider, static (spc, result) =>
         {
-            var source = RecordEmitter.EmitRecordPartial(record);
-            context.AddSource($"{record.TypeName}.g.cs", source);
-        }
+            foreach (var diag in result.Diagnostics)
+                spc.ReportDiagnostic(diag.ToDiagnostic());
 
-        if (records.Length > 0)
+            if (result.Metadata is not null)
+            {
+                var source = RecordEmitter.EmitRecordPartial(result.Metadata);
+                spc.AddSource($"{result.Metadata.TypeName}.g.cs", source);
+            }
+        });
+
+        // Registry output: re-runs when ANY record changes, but only emits the registry
+        context.RegisterSourceOutput(recordProvider.Collect(), static (spc, results) =>
         {
-            var registry = RecordEmitter.EmitRegistry(records);
-            context.AddSource("RecordRegistry.g.cs", registry);
-        }
+            var metadata = results
+                .Where(r => r.Metadata is not null)
+                .Select(r => r.Metadata!);
+
+            if (metadata.Any())
+            {
+                var registry = RecordEmitter.EmitRegistry(metadata);
+                spc.AddSource("RecordRegistry.g.cs", registry);
+            }
+        });
     }
 }

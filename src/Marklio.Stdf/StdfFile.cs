@@ -56,9 +56,9 @@ public static class StdfFile
         var opts = options ?? new StdfWriterOptions();
         var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
         Stream writeStream = opts.Compression != StdfCompression.None
-            ? IO.CompressionHelper.WrapForWriting(fileStream, opts.Compression)
+            ? IO.CompressionHelper.WrapForWriting(fileStream, opts.Compression, leaveOpen: true)
             : fileStream;
-        var pipeWriter = PipeWriter.Create(writeStream, new StreamPipeWriterOptions(leaveOpen: false));
+        var pipeWriter = PipeWriter.Create(writeStream, new StreamPipeWriterOptions(leaveOpen: true));
         return new StdfWriter(new StdfRecordWriter(pipeWriter, opts.Endianness), fileStream,
             compressionStream: !ReferenceEquals(writeStream, fileStream) ? writeStream : null);
     }
@@ -72,7 +72,7 @@ public static class StdfFile
     {
         var opts = options ?? new StdfWriterOptions();
         Stream writeStream = opts.Compression != StdfCompression.None
-            ? IO.CompressionHelper.WrapForWriting(stream, opts.Compression)
+            ? IO.CompressionHelper.WrapForWriting(stream, opts.Compression, leaveOpen: true)
             : stream;
         var pipeWriter = PipeWriter.Create(writeStream, new StreamPipeWriterOptions(leaveOpen: true));
         return new StdfWriter(new StdfRecordWriter(pipeWriter, opts.Endianness), ownsStream: null,
@@ -85,22 +85,28 @@ public static class StdfFile
         StdfReaderOptions? options,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Detect and wrap compressed streams
-        var readStream = IO.CompressionHelper.WrapForReading(stream);
+        // Detect and wrap compressed streams.
+        // When we don't own the stream, leaveOpen:true prevents the wrapper from closing it.
+        var readStream = IO.CompressionHelper.WrapForReading(stream, leaveOpen: !ownsStream);
         bool wrappedStream = !ReferenceEquals(readStream, stream);
 
-        var pipeReader = PipeReader.Create(readStream, new StreamPipeReaderOptions(leaveOpen: false));
+        // PipeReader should only leave the underlying stream open when it IS the
+        // caller's stream (not wrapped) and we don't own it.
+        var pipeReader = PipeReader.Create(readStream, new StreamPipeReaderOptions(
+            leaveOpen: !ownsStream && !wrappedStream));
         var reader = new StdfRecordReader(pipeReader, options);
 
-        await foreach (var record in reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+        try
         {
-            yield return record;
+            await foreach (var record in reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+            {
+                yield return record;
+            }
         }
-
-        if (wrappedStream)
-            readStream.Dispose();
-        if (ownsStream)
-            await stream.DisposeAsync().ConfigureAwait(false);
+        finally
+        {
+            await pipeReader.CompleteAsync().ConfigureAwait(false);
+        }
     }
 
     private static IEnumerable<StdfRecord> ReadFromSequence(ReadOnlySequence<byte> sequence, StdfReaderOptions? options = null)
@@ -144,7 +150,7 @@ public static class StdfFile
                         break;
                     continue;
                 }
-                break; // truncated
+                throw new StdfParseException("Truncated record: not enough data for the declared record length.", reader.Consumed - 4);
             }
 
             long payloadStart = reader.Consumed;

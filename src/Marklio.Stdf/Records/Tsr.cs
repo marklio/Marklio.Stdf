@@ -113,4 +113,7 @@ public partial record struct Tsr : IHeadSiteRecord
     /// [STDF: TST_SQRS, R*4]
     /// </summary>
     public float? ResultSumOfSquares { get; set; }
+
+    /// <summary>Gets <see cref="OptionalFlags"/> as a typed enum. See <see cref="OptionalFlags"/> for the raw value.</summary>
+    public TsrOptionalFlags OptionalFlagsEnum => (TsrOptionalFlags)(OptionalFlags ?? 0);
 }

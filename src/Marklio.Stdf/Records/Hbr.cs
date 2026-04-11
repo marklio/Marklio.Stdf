@@ -47,8 +47,4 @@ public partial record struct Hbr : IBinRecord
     /// [STDF: HBIN_NAM, C*n]
     /// </summary>
     public string? BinName { get; set; }
-
-    // IBinRecord explicit implementations — map generic names to HBR-specific properties
-    ushort IBinRecord.BinNumber => HardwareBin;
-    char? IBinRecord.PassFail => BinPassFail;
 }

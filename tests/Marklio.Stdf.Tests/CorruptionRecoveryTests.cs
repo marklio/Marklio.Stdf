@@ -64,9 +64,8 @@ public class CorruptionRecoveryTests
 
         var data = ms.ToArray();
 
-        // Without recovery: reads FAR, then hits garbage, stops
-        var normalRecords = StdfFile.Read(data).ToList();
-        Assert.Single(normalRecords); // only FAR
+        // Without recovery: reads FAR, then hits garbage, throws
+        Assert.Throws<StdfParseException>(() => StdfFile.Read(data).ToList());
 
         // With recovery: should find the PIR after garbage
         var recoveryEvents = new List<StdfRecoveryEvent>();
