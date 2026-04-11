@@ -70,7 +70,7 @@ public static class ContinuationMerger
     }
 
     /// <summary>
-    /// Synchronous version of <see cref="MergeContinuations"/>.
+    /// Synchronous version of <see cref="MergeContinuations(IAsyncEnumerable{StdfRecord}, CancellationToken)"/>.
     /// </summary>
     public static IEnumerable<StdfRecord> MergeContinuations(this IEnumerable<StdfRecord> source)
     {

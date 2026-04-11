@@ -113,8 +113,8 @@ public class V4_2007Tests
         Assert.Equal(100UL, result.PatternBegin[0]);
         Assert.Equal(200UL, result.PatternBegin[1]);
         Assert.Equal(300UL, result.PatternBegin[2]);
-        Assert.Equal([199UL, 299UL, 399UL], result.PatternEnd);
-        Assert.Equal(["file1.pat", "file2.pat", "file3.pat"], result.PatternFiles);
+        Assert.Equal([199UL, 299UL, 399UL], result.PatternEnd!);
+        Assert.Equal(["file1.pat", "file2.pat", "file3.pat"], result.PatternFiles!);
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public class V4_2007Tests
         Assert.Equal(0, result.ContinuationFlag);
         Assert.Equal((ushort)2, result.TotalMapCount);
         Assert.Equal([10, 20], result.PmrIndexes);
-        Assert.Equal(["chain_a", "chain_b"], result.AtpgNames);
+        Assert.Equal(["chain_a", "chain_b"], result.AtpgNames!);
     }
 
     [Fact]
@@ -262,7 +262,7 @@ public class V4_2007Tests
         Assert.Equal([10, 11], result.MasterClocks);
         Assert.Equal([20], result.SlaveClocks);
         Assert.Equal((byte)1, result.InversionValue);
-        Assert.Equal(["cell_a", "cell_b", "cell_c"], result.CellList);
+        Assert.Equal(["cell_a", "cell_b", "cell_c"], result.CellList!);
     }
 
     [Fact]
@@ -430,7 +430,7 @@ public class V4_2007Tests
         vur.Serialize(buffer, Endianness.LittleEndian);
         var bytes = buffer.WrittenSpan.ToArray();
 
-        Assert.Equal(1, bytes.Length); // just the count byte = 0
+        Assert.Single(bytes); // just the count byte = 0
 
         var seq = new ReadOnlySequence<byte>(bytes);
         var reader = new SequenceReader<byte>(seq);

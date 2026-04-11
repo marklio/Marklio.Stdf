@@ -157,6 +157,7 @@ internal sealed class StdfRecordReader
         int skipped = 1;
 
         Span<byte> probe = stackalloc byte[4];
+        Span<byte> nextProbe = stackalloc byte[4];
 
         while (scanReader.Remaining >= HeaderSize)
         {
@@ -176,7 +177,6 @@ internal sealed class StdfRecordReader
                 {
                     var savePos = scanReader;
                     savePos.Advance(candidateTotal);
-                    Span<byte> nextProbe = stackalloc byte[4];
                     savePos.TryCopyTo(nextProbe);
                     byte nextType = nextProbe[2];
                     byte nextSub = nextProbe[3];

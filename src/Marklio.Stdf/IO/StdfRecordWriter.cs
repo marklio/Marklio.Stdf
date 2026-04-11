@@ -62,7 +62,7 @@ internal sealed class StdfRecordWriter : IAsyncDisposable
             throw new OperationCanceledException();
     }
 
-    /// <summary>
+    /// <summary>Completes the underlying pipe writer.</summary>
     public async ValueTask DisposeAsync()
     {
         await _pipeWriter.CompleteAsync().ConfigureAwait(false);

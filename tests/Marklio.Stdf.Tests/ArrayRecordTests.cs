@@ -97,10 +97,10 @@ public class ArrayRecordTests
         Assert.Equal([1, 2], plr.GroupIndexes);
         Assert.Equal([3, 4], plr.GroupModes);
         Assert.Equal([5, 6], plr.GroupRadixes);
-        Assert.Equal(["AB", "CD"], plr.ProgramChars);
-        Assert.Equal(["E", "F"], plr.ReturnChars);
-        Assert.Equal(["X", "Y"], plr.ProgramCharsLong);
-        Assert.Equal(["M", "N"], plr.ReturnCharsLong);
+        Assert.Equal(["AB", "CD"], plr.ProgramChars!);
+        Assert.Equal(["E", "F"], plr.ReturnChars!);
+        Assert.Equal(["X", "Y"], plr.ProgramCharsLong!);
+        Assert.Equal(["M", "N"], plr.ReturnCharsLong!);
 
         // Round-trip
         var output = new ArrayBufferWriter<byte>();

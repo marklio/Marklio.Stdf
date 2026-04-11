@@ -111,9 +111,9 @@ public static class StdfFile
         var endiannessDetected = false;
         var reader = new SequenceReader<byte>(sequence);
 
+        Span<byte> hdr = stackalloc byte[4];
         while (reader.Remaining >= 4)
         {
-            Span<byte> hdr = stackalloc byte[4];
             reader.TryCopyTo(hdr);
 
             // For FAR (first record), peek at CPU_TYP to detect endianness
@@ -200,6 +200,7 @@ public static class StdfFile
         reader.Advance(1); // skip at least one byte
 
         Span<byte> probe = stackalloc byte[4];
+        Span<byte> nextProbe = stackalloc byte[4];
         while (reader.Remaining >= 4)
         {
             reader.TryCopyTo(probe);
@@ -218,7 +219,6 @@ public static class StdfFile
                 {
                     var savePos = reader;
                     savePos.Advance(candidateTotal);
-                    Span<byte> nextProbe = stackalloc byte[4];
                     savePos.TryCopyTo(nextProbe);
                     if (IO.RecordRegistry.IsKnown(nextProbe[2], nextProbe[3]))
                     {

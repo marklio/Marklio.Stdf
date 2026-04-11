@@ -64,7 +64,7 @@ public class CompressionTests
             // Verify the temp file starts with compression magic bytes
             var header = new byte[2];
             using (var fs = File.OpenRead(tempPath))
-                fs.Read(header);
+                fs.ReadExactly(header);
 
             if (compression == StdfCompression.Gzip)
             {
