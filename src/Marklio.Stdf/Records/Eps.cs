@@ -7,6 +7,6 @@ namespace Marklio.Stdf.Records;
 /// Marks the end of a program section. Has no fields.
 /// </summary>
 [StdfRecord(20, 20)]
-public partial record struct Eps
+public partial record class Eps
 {
 }

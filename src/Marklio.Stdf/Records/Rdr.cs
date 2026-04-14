@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Lists the hardware bins to be retested.
 /// </summary>
 [StdfRecord(1, 70)]
-public partial record struct Rdr
+public partial record class Rdr
 {
     [WireCount("bins")] private ushort RetestBinCount => throw new NotSupportedException();
 

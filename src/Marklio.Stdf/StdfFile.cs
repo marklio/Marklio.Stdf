@@ -160,24 +160,21 @@ public static class StdfFile
             try
             {
                 var record = IO.RecordRegistry.Deserialize(recType, recSub, ref payloadReader, endianness);
-                if (record.HasValue)
+                if (record != null)
                 {
-                    ReadOnlyMemory<byte> trailing = default;
                     if (payloadReader.Remaining > 0)
                     {
                         var trailingBytes = new byte[payloadReader.Remaining];
                         payloadReader.TryCopyTo(trailingBytes);
-                        trailing = trailingBytes;
+                        record.TrailingData = trailingBytes;
                     }
 
-                    records.Add(new StdfRecord(record.Value.Record, recType, recSub, trailing));
+                    records.Add(record);
                 }
                 else
                 {
                     var rawBytes = payloadSlice.ToArray();
-                    records.Add(new StdfRecord(
-                        new UnknownRecord { RecType = recType, RecSub = recSub, RawData = rawBytes },
-                        recType, recSub));
+                    records.Add(new UnknownRecord(recType, recSub) { RawData = rawBytes });
                 }
             }
             catch when (opts.RecoveryMode)
@@ -278,12 +275,6 @@ public sealed class StdfWriter : IAsyncDisposable
     /// <summary>Writes a single STDF record.</summary>
     public ValueTask WriteAsync(StdfRecord record, CancellationToken cancellationToken = default)
         => _writer.WriteAsync(record, cancellationToken);
-
-    /// <summary>
-    /// Helper to write a typed record struct, wrapping it in a StdfRecord automatically.
-    /// </summary>
-    public ValueTask WriteAsync<T>(T record, CancellationToken cancellationToken = default) where T : struct, IStdfRecord
-        => _writer.WriteAsync(new StdfRecord(record, T.RecordType, T.RecordSubType), cancellationToken);
 
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()

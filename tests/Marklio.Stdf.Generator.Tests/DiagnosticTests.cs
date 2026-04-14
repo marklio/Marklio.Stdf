@@ -15,7 +15,7 @@ public class DiagnosticTests
     private const string AttributeStubs = """
         namespace Marklio.Stdf.Attributes
         {
-            [System.AttributeUsage(System.AttributeTargets.Struct)]
+            [System.AttributeUsage(System.AttributeTargets.Class)]
             public sealed class StdfRecordAttribute : System.Attribute
             {
                 public byte RecordType { get; }
@@ -72,7 +72,12 @@ public class DiagnosticTests
 
         namespace Marklio.Stdf
         {
-            public interface IStdfRecord { }
+            public abstract record class StdfRecord
+            {
+                public abstract byte RecordType { get; }
+                public abstract byte RecordSubType { get; }
+                protected internal abstract void Serialize(System.Buffers.IBufferWriter<byte> writer, Endianness endianness);
+            }
         }
         """;
 
@@ -120,7 +125,7 @@ public class DiagnosticTests
             namespace TestRecords;
 
             [StdfRecord(1, 10)]
-            public partial record struct BadRecord
+            public partial record class BadRecord
             {
                 public System.TimeSpan Elapsed { get; init; }
             }
@@ -143,7 +148,7 @@ public class DiagnosticTests
             namespace TestRecords;
 
             [StdfRecord(1, 20)]
-            public partial record struct BadCountedArray
+            public partial record class BadCountedArray
             {
                 [WireCount("grp")] private ushort Count => throw new System.NotSupportedException();
                 [CountedArray("grp")] public int NotAnArray { get; init; }
@@ -167,7 +172,7 @@ public class DiagnosticTests
             namespace TestRecords;
 
             [StdfRecord(1, 30)]
-            public partial record struct OrphanWireCount
+            public partial record class OrphanWireCount
             {
                 [WireCount("orphan")] private ushort Count => throw new System.NotSupportedException();
                 public byte SomeField { get; init; }
@@ -191,7 +196,7 @@ public class DiagnosticTests
             namespace TestRecords;
 
             [StdfRecord(1, 40)]
-            public partial record struct BadFixedString
+            public partial record class BadFixedString
             {
                 [FixedString(10)] public int NotAString { get; init; }
             }
@@ -214,7 +219,7 @@ public class DiagnosticTests
             namespace TestRecords;
 
             [StdfRecord(1, 50)]
-            public partial record struct GoodRecord
+            public partial record class GoodRecord
             {
                 [WireCount("items")] private ushort ItemCount => throw new System.NotSupportedException();
                 [CountedArray("items")] public ushort[] Items { get; init; }

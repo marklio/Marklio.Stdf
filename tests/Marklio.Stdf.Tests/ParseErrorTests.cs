@@ -67,7 +67,7 @@ public class ParseErrorTests
         // Should not throw — recovery mode tolerates truncation
         var records = StdfFile.Read(data, opts).ToList();
         Assert.NotEmpty(records);
-        Assert.True(records[0].Is<Far>(out _));
+        Assert.IsType<Far>(records[0]);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class ParseErrorTests
             records.Add(rec);
 
         Assert.NotEmpty(records);
-        Assert.True(records[0].Is<Far>(out _));
+        Assert.IsType<Far>(records[0]);
     }
 
     [Fact]

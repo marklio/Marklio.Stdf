@@ -24,7 +24,7 @@ internal sealed class StdfRecordWriter : IAsyncDisposable
     {
         // Serialize payload to a temporary buffer to compute REC_LEN
         var payloadBuffer = new ArrayBufferWriter<byte>();
-        record.Record.Serialize(payloadBuffer, _endianness);
+        record.Serialize(payloadBuffer, _endianness);
 
         // Include trailing data for byte-exact round-tripping
         int trailingLen = record.TrailingData.Length;

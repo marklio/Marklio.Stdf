@@ -8,7 +8,7 @@ namespace Marklio.Stdf.Records;
 /// Contains results from a parametric test with multiple measurements. One per test per part.
 /// </summary>
 [StdfRecord(15, 15)]
-public partial record struct Mpr : ITestRecord
+public partial record class Mpr : ITestRecord
 {
     /// <summary>Test number from the test program. [STDF: TEST_NUM, U*4]</summary>
     public uint TestNumber { get; set; }

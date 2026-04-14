@@ -16,7 +16,7 @@ A high-performance .NET 10 library for reading and writing [STDF](https://en.wik
 
 ### Reading files
 
-Use `TryGetRecord<T>()` to match specific record types — this is the canonical pattern:
+Use pattern matching to match specific record types — this is the canonical pattern:
 
 ```csharp
 using Marklio.Stdf;
@@ -24,24 +24,24 @@ using Marklio.Stdf.Records;
 
 await foreach (var record in StdfFile.ReadAsync("data.stdf"))
 {
-    if (record.TryGetRecord<Mir>(out var mir))
+    if (record is Mir mir)
         Console.WriteLine($"Lot: {mir.LotId}");
-    else if (record.TryGetRecord<Ptr>(out var ptr))
+    else if (record is Ptr ptr)
         Console.WriteLine($"Test {ptr.TestNumber}: {ptr.Result} {ptr.Units}");
-    else if (record.TryGetRecord<Prr>(out var prr))
+    else if (record is Prr prr)
         Console.WriteLine($"Part {prr.PartId} — bin {prr.HardwareBin}");
 }
 ```
 
-Use `Is<T>()` to match across record families via shared interfaces:
+Use `is` to match across record families via shared interfaces:
 
 ```csharp
 await foreach (var rec in StdfFile.ReadAsync("wafer1.stdf"))
 {
-    if (rec.Is<ITestRecord>(out var test))
+    if (rec is ITestRecord test)
         Console.WriteLine($"  Head {test.HeadNumber} Site {test.SiteNumber}");
 
-    if (rec.Is<IBinRecord>(out var bin))
+    if (rec is IBinRecord bin)
         Console.WriteLine($"Bin {bin.BinNumber}: {bin.BinCount} parts");
 }
 ```
@@ -113,7 +113,7 @@ Read from a byte array or `ReadOnlyMemory<byte>` — compression is auto-detecte
 var data = File.ReadAllBytes("wafer1.stdf.gz");
 foreach (var rec in StdfFile.Read(data))
 {
-    if (rec.TryGetRecord<Ptr>(out var ptr))
+    if (rec is Ptr ptr)
         Console.WriteLine($"{ptr.TestNumber}: {ptr.Result}");
 }
 ```
@@ -166,7 +166,7 @@ single logical records, making downstream analysis simpler.
 // Async — merged records are yielded as single PSR/STR instances
 await foreach (var rec in StdfFile.ReadAsync("data.stdf").MergeContinuations())
 {
-    if (rec.Record is Psr psr)
+    if (rec is Psr psr)
         Console.WriteLine($"PSR {psr.PsrIndex}: {psr.PatternLabels?.Length} patterns");
 }
 

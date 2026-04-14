@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Marks the beginning of a part (device) test. One per part tested.
 /// </summary>
 [StdfRecord(5, 10)]
-public partial record struct Pir : IHeadSiteRecord
+public partial record class Pir : IHeadSiteRecord
 {
     /// <summary>
     /// Test head number. [STDF: HEAD_NUM, U*1]

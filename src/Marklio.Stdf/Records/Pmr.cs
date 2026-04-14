@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Maps a pin index to a physical/logical pin. One record per pin.
 /// </summary>
 [StdfRecord(1, 60)]
-public partial record struct Pmr
+public partial record class Pmr
 {
     /// <summary>
     /// Unique index for this pin, referenced by test result records.

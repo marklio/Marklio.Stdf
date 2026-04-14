@@ -8,7 +8,7 @@ namespace Marklio.Stdf.Records;
 /// Has three independent count groups: "mclk" (master clocks), "sclk" (slave clocks), and "cell" (cell list).
 /// </summary>
 [StdfRecord(1, 94)]
-public partial record struct Cdr
+public partial record class Cdr
 {
     /// <summary>
     /// Continuation flag. Bit 0: if set, this record continues in the next CDR record.

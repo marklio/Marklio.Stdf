@@ -11,10 +11,12 @@ namespace Marklio.Stdf.Records;
 /// (CYC_SIZE, PMR_SIZE, CHN_SIZE, PAT_SIZE, BIT_SIZE, U1_SIZE, U2_SIZE, U3_SIZE, UTX_SIZE).
 /// Supports continuation. Implements <see cref="ITestRecord"/>.
 /// </summary>
-public readonly record struct Str : IStdfRecord, ITestRecord
+public record class Str : StdfRecord, ITestRecord
 {
-    static byte IStdfRecord.RecordType => 15;
-    static byte IStdfRecord.RecordSubType => 30;
+    /// <inheritdoc/>
+    public override byte RecordType => 15;
+    /// <inheritdoc/>
+    public override byte RecordSubType => 30;
 
     /// <summary>
     /// Continuation flag. Bit 0: if set, this record continues in the next STR record.
@@ -582,7 +584,7 @@ public readonly record struct Str : IStdfRecord, ITestRecord
     }
 
     /// <summary>Serializes this <see cref="Str"/> to the specified writer.</summary>
-    public void Serialize(IBufferWriter<byte> writer, Endianness endianness)
+    protected internal override void Serialize(IBufferWriter<byte> writer, Endianness endianness)
     {
         WriteByte(writer, ContinuationFlag);
         WriteU4(writer, TestNumber, endianness);

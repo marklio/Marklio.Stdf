@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains free-form text for the data log.
 /// </summary>
 [StdfRecord(50, 30)]
-public partial record struct Dtr
+public partial record class Dtr
 {
     /// <summary>
     /// The datalog text. Always present (non-optional).

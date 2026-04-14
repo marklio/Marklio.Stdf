@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Defines a named group of pins. One record per group.
 /// </summary>
 [StdfRecord(1, 62)]
-public partial record struct Pgr
+public partial record class Pgr
 {
     /// <summary>
     /// Unique index for this pin group.

@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Marks the start of testing on a wafer. One per wafer.
 /// </summary>
 [StdfRecord(2, 10)]
-public partial record struct Wir : IHeadRecord
+public partial record class Wir : IHeadRecord
 {
     /// <summary>
     /// Test head number. [STDF: HEAD_NUM, U*1]

@@ -45,7 +45,7 @@ public static class ContinuationMerger
 
         await foreach (var rec in source.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
-            if (rec.Record is Psr psr)
+            if (rec is Psr psr)
             {
                 psrBuffer ??= new List<Psr>();
                 psrBuffer.Add(psr);
@@ -54,11 +54,11 @@ public static class ContinuationMerger
                 {
                     // Final segment — merge and emit
                     var merged = MergePsr(psrBuffer);
-                    yield return new StdfRecord(merged, 1, 90);
+                    yield return merged;
                     psrBuffer.Clear();
                 }
             }
-            else if (rec.Record is Str str)
+            else if (rec is Str str)
             {
                 strBuffer ??= new List<Str>();
                 strBuffer.Add(str);
@@ -66,7 +66,7 @@ public static class ContinuationMerger
                 if ((str.ContinuationFlag & ContinuationBit) == 0)
                 {
                     var merged = MergeStr(strBuffer);
-                    yield return new StdfRecord(merged, 15, 30);
+                    yield return merged;
                     strBuffer.Clear();
                 }
             }
@@ -80,12 +80,12 @@ public static class ContinuationMerger
         if (psrBuffer is { Count: > 0 })
         {
             var merged = MergePsr(psrBuffer);
-            yield return new StdfRecord(merged, 1, 90);
+            yield return merged;
         }
         if (strBuffer is { Count: > 0 })
         {
             var merged = MergeStr(strBuffer);
-            yield return new StdfRecord(merged, 15, 30);
+            yield return merged;
         }
     }
 
@@ -117,7 +117,7 @@ public static class ContinuationMerger
 
         foreach (var rec in source)
         {
-            if (rec.Record is Psr psr)
+            if (rec is Psr psr)
             {
                 psrBuffer ??= new List<Psr>();
                 psrBuffer.Add(psr);
@@ -125,11 +125,11 @@ public static class ContinuationMerger
                 if ((psr.ContinuationFlag & ContinuationBit) == 0)
                 {
                     var merged = MergePsr(psrBuffer);
-                    yield return new StdfRecord(merged, 1, 90);
+                    yield return merged;
                     psrBuffer.Clear();
                 }
             }
-            else if (rec.Record is Str str)
+            else if (rec is Str str)
             {
                 strBuffer ??= new List<Str>();
                 strBuffer.Add(str);
@@ -137,7 +137,7 @@ public static class ContinuationMerger
                 if ((str.ContinuationFlag & ContinuationBit) == 0)
                 {
                     var merged = MergeStr(strBuffer);
-                    yield return new StdfRecord(merged, 15, 30);
+                    yield return merged;
                     strBuffer.Clear();
                 }
             }
@@ -150,12 +150,12 @@ public static class ContinuationMerger
         if (psrBuffer is { Count: > 0 })
         {
             var merged = MergePsr(psrBuffer);
-            yield return new StdfRecord(merged, 1, 90);
+            yield return merged;
         }
         if (strBuffer is { Count: > 0 })
         {
             var merged = MergeStr(strBuffer);
-            yield return new StdfRecord(merged, 15, 30);
+            yield return merged;
         }
     }
 

@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains pin group configuration and mode information. One record per pin list definition.
 /// </summary>
 [StdfRecord(1, 63)]
-public partial record struct Plr
+public partial record class Plr
 {
     [WireCount("grp")] private ushort GroupCount => throw new NotSupportedException();
 

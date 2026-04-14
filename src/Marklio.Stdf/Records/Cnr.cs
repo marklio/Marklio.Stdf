@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// V4-2007. Maps a chain bit position to a scan cell name.
 /// </summary>
 [StdfRecord(1, 92)]
-public partial record struct Cnr
+public partial record class Cnr
 {
     /// <summary>
     /// Chain number (references CDR chain index).

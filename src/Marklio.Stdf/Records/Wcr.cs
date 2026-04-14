@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains wafer-level geometry and orientation information.
 /// </summary>
 [StdfRecord(2, 30)]
-public partial record struct Wcr
+public partial record class Wcr
 {
     /// <summary>
     /// Diameter of the wafer in the units specified by <see cref="WaferUnits"/>. [STDF: WAFR_SIZ, R*4]

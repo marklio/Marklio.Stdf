@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains the results of testing a single part. Paired with a PIR.
 /// </summary>
 [StdfRecord(5, 20)]
-public partial record struct Prr : IHeadSiteRecord
+public partial record class Prr : IHeadSiteRecord
 {
     /// <summary>
     /// Test head number. [STDF: HEAD_NUM, U*1]

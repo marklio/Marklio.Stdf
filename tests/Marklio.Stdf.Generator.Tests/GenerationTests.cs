@@ -18,7 +18,7 @@ public class GenerationTests
     private const string AttributeStubs = """
         namespace Marklio.Stdf.Attributes
         {
-            [System.AttributeUsage(System.AttributeTargets.Struct)]
+            [System.AttributeUsage(System.AttributeTargets.Class)]
             public sealed class StdfRecordAttribute : System.Attribute
             {
                 public byte RecordType { get; }
@@ -75,45 +75,42 @@ public class GenerationTests
 
         namespace Marklio.Stdf
         {
-            public interface IStdfRecord
+            public abstract record class StdfRecord
             {
-                static abstract byte RecordType { get; }
-                static abstract byte RecordSubType { get; }
-                void Serialize(System.Buffers.IBufferWriter<byte> writer, Endianness endianness);
+                public abstract byte RecordType { get; }
+                public abstract byte RecordSubType { get; }
+                public System.ReadOnlyMemory<byte> TrailingData { get; internal set; }
+                protected internal abstract void Serialize(System.Buffers.IBufferWriter<byte> writer, Endianness endianness);
             }
 
             public enum Endianness { Little, Big }
 
-            public readonly struct StdfRecord
+            public sealed record class UnknownRecord : StdfRecord
             {
-                public IStdfRecord Record { get; }
-                public byte RecordType { get; }
-                public byte RecordSubType { get; }
-                internal StdfRecord(IStdfRecord record, byte recType, byte recSub)
-                {
-                    Record = record;
-                    RecordType = recType;
-                    RecordSubType = recSub;
-                }
+                public override byte RecordType { get; }
+                public override byte RecordSubType { get; }
+                public byte[]? RawData { get; init; }
+                public UnknownRecord(byte recordType, byte recordSubType) { RecordType = recordType; RecordSubType = recordSubType; }
+                protected internal override void Serialize(System.Buffers.IBufferWriter<byte> writer, Endianness endianness) { }
             }
         }
 
         namespace Marklio.Stdf.Records
         {
-            public partial record struct Gdr : Marklio.Stdf.IStdfRecord
+            public partial record class Gdr : Marklio.Stdf.StdfRecord
             {
-                static byte Marklio.Stdf.IStdfRecord.RecordType => 50;
-                static byte Marklio.Stdf.IStdfRecord.RecordSubType => 10;
-                public void Serialize(System.Buffers.IBufferWriter<byte> writer, Marklio.Stdf.Endianness endianness) { }
-                public static Gdr Deserialize(ref System.Buffers.SequenceReader<byte> reader, Marklio.Stdf.Endianness endianness) => default;
+                public override byte RecordType => 50;
+                public override byte RecordSubType => 10;
+                protected internal override void Serialize(System.Buffers.IBufferWriter<byte> writer, Marklio.Stdf.Endianness endianness) { }
+                public static Gdr Deserialize(ref System.Buffers.SequenceReader<byte> reader, Marklio.Stdf.Endianness endianness) => new();
             }
 
-            public partial record struct Str : Marklio.Stdf.IStdfRecord
+            public partial record class Str : Marklio.Stdf.StdfRecord
             {
-                static byte Marklio.Stdf.IStdfRecord.RecordType => 15;
-                static byte Marklio.Stdf.IStdfRecord.RecordSubType => 30;
-                public void Serialize(System.Buffers.IBufferWriter<byte> writer, Marklio.Stdf.Endianness endianness) { }
-                public static Str Deserialize(ref System.Buffers.SequenceReader<byte> reader, Marklio.Stdf.Endianness endianness) => default;
+                public override byte RecordType => 15;
+                public override byte RecordSubType => 30;
+                protected internal override void Serialize(System.Buffers.IBufferWriter<byte> writer, Marklio.Stdf.Endianness endianness) { }
+                public static Str Deserialize(ref System.Buffers.SequenceReader<byte> reader, Marklio.Stdf.Endianness endianness) => new();
             }
         }
 
@@ -244,7 +241,7 @@ public class GenerationTests
             namespace TestRecords;
 
             [StdfRecord(1, 10)]
-            public partial record struct SimpleRec
+            public partial record class SimpleRec
             {
                 public byte FieldA { get; set; }
                 public byte FieldB { get; set; }
@@ -256,7 +253,7 @@ public class GenerationTests
         AssertNoGeneratorErrors(diagnostics);
         AssertOutputCompiles(outputCompilation);
 
-        var recordSource = generatedSources.First(s => s.Contains("partial record struct SimpleRec"));
+        var recordSource = generatedSources.First(s => s.Contains("partial record class SimpleRec"));
         Assert.Contains("public SimpleRec()", recordSource);
         Assert.Contains("Deserialize", recordSource);
         Assert.Contains("Serialize", recordSource);
@@ -272,7 +269,7 @@ public class GenerationTests
             namespace TestRecords;
 
             [StdfRecord(2, 10)]
-            public partial record struct OptionalRec
+            public partial record class OptionalRec
             {
                 public byte? FieldA { get; set; }
                 public ushort? FieldB { get; set; }
@@ -286,7 +283,7 @@ public class GenerationTests
         AssertNoGeneratorErrors(diagnostics);
         AssertOutputCompiles(outputCompilation);
 
-        var recordSource = generatedSources.First(s => s.Contains("partial record struct OptionalRec"));
+        var recordSource = generatedSources.First(s => s.Contains("partial record class OptionalRec"));
         Assert.Contains("_fieldPresence", recordSource);
         // With <=32 fields, presence should be uint
         Assert.Contains("uint _fieldPresence", recordSource);
@@ -303,7 +300,7 @@ public class GenerationTests
             namespace TestRecords;
 
             [StdfRecord(3, 10)]
-            public partial record struct ArrayRec
+            public partial record class ArrayRec
             {
                 [WireCount("items")] private ushort ItemCount => throw new System.NotSupportedException();
                 [CountedArray("items")] public ushort[] Items { get; set; }
@@ -316,7 +313,7 @@ public class GenerationTests
         AssertNoGeneratorErrors(diagnostics);
         AssertOutputCompiles(outputCompilation);
 
-        var recordSource = generatedSources.First(s => s.Contains("partial record struct ArrayRec"));
+        var recordSource = generatedSources.First(s => s.Contains("partial record class ArrayRec"));
         // Wire count local should be generated in deserialization
         Assert.Contains("_cnt_items", recordSource);
         // Wire count should be computed from array length in serialization
@@ -333,7 +330,7 @@ public class GenerationTests
             namespace TestRecords;
 
             [StdfRecord(4, 10)]
-            public partial record struct FixedStringRec
+            public partial record class FixedStringRec
             {
                 [FixedString(8)] public string FixedName { get; set; }
                 public byte OtherField { get; set; }
@@ -345,7 +342,7 @@ public class GenerationTests
         AssertNoGeneratorErrors(diagnostics);
         AssertOutputCompiles(outputCompilation);
 
-        var recordSource = generatedSources.First(s => s.Contains("partial record struct FixedStringRec"));
+        var recordSource = generatedSources.First(s => s.Contains("partial record class FixedStringRec"));
         // ReadCf with the fixed length should appear in deserialization
         Assert.Contains("ReadCf(ref reader, 8)", recordSource);
         // WriteCf with the fixed length should appear in serialization
@@ -361,7 +358,7 @@ public class GenerationTests
             namespace TestRecords;
 
             [StdfRecord(5, 10)]
-            public partial record struct EmptyRec
+            public partial record class EmptyRec
             {
             }
             """;
@@ -371,10 +368,10 @@ public class GenerationTests
         AssertNoGeneratorErrors(diagnostics);
         AssertOutputCompiles(outputCompilation);
 
-        var recordSource = generatedSources.First(s => s.Contains("partial record struct EmptyRec"));
+        var recordSource = generatedSources.First(s => s.Contains("partial record class EmptyRec"));
         Assert.Contains("Deserialize", recordSource);
         Assert.Contains("Serialize", recordSource);
-        Assert.Contains("IStdfRecord", recordSource);
+        Assert.Contains("StdfRecord", recordSource);
     }
 
     [Fact]
@@ -387,7 +384,7 @@ public class GenerationTests
         var source = "using Marklio.Stdf.Attributes;\n\n" +
             "namespace TestRecords;\n\n" +
             "[StdfRecord(6, 10)]\n" +
-            "public partial record struct BigRec\n{\n    " +
+            "public partial record class BigRec\n{\n    " +
             fields + "\n}\n";
 
         var (diagnostics, outputCompilation, generatedSources) = RunGenerator(source);
@@ -395,7 +392,7 @@ public class GenerationTests
         AssertNoGeneratorErrors(diagnostics);
         AssertOutputCompiles(outputCompilation);
 
-        var recordSource = generatedSources.First(s => s.Contains("partial record struct BigRec"));
+        var recordSource = generatedSources.First(s => s.Contains("partial record class BigRec"));
         // With >32 fields, presence must use ulong
         Assert.Contains("ulong _fieldPresence", recordSource);
         // Literal suffix should be UL instead of u
@@ -411,7 +408,7 @@ public class GenerationTests
             namespace TestRecords;
 
             [StdfRecord(7, 10)]
-            public partial record struct SharedGroupRec
+            public partial record class SharedGroupRec
             {
                 [WireCount("grp")] private ushort GrpCount => throw new System.NotSupportedException();
                 [CountedArray("grp")] public ushort[] ArrayA { get; set; }
@@ -424,7 +421,7 @@ public class GenerationTests
         AssertNoGeneratorErrors(diagnostics);
         AssertOutputCompiles(outputCompilation);
 
-        var recordSource = generatedSources.First(s => s.Contains("partial record struct SharedGroupRec"));
+        var recordSource = generatedSources.First(s => s.Contains("partial record class SharedGroupRec"));
         // Both arrays should use the same wire count local during deserialization
         Assert.Contains("_cnt_grp", recordSource);
         // The wire count should be derived from the first array's length

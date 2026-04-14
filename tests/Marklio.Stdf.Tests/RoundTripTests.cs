@@ -33,15 +33,15 @@ public class RoundTripTests
         var records = StdfFile.Read(original).ToList();
 
         Assert.Equal(3, records.Count);
-        Assert.True(records[0].Is<Far>(out var far));
+        var far = Assert.IsType<Far>(records[0]);
         Assert.Equal(2, far.CpuType);
         Assert.Equal(4, far.StdfVersion);
 
-        Assert.True(records[1].Is<Pir>(out var pir));
+        var pir = Assert.IsType<Pir>(records[1]);
         Assert.Equal(1, pir.HeadNumber);
         Assert.Equal(1, pir.SiteNumber);
 
-        Assert.True(records[2].Is<Prr>(out var prr));
+        var prr = Assert.IsType<Prr>(records[2]);
         Assert.Equal(1, prr.HeadNumber);
         Assert.Equal(10, prr.NumTestsExecuted);
         Assert.Equal(1, prr.HardwareBin);
@@ -52,7 +52,7 @@ public class RoundTripTests
         foreach (var record in records)
         {
             var payload = new System.Buffers.ArrayBufferWriter<byte>();
-            record.Record.Serialize(payload, Endianness.LittleEndian);
+            record.Serialize(payload, Endianness.LittleEndian);
 
             // Write header
             obw.Write((ushort)payload.WrittenCount);  // REC_LEN
@@ -84,8 +84,8 @@ public class RoundTripTests
                 records.Add(rec);
 
             Assert.Equal(2, records.Count);
-            Assert.True(records[0].Is<Far>(out _));
-            Assert.True(records[1].Is<Dtr>(out var dtr));
+            Assert.IsType<Far>(records[0]);
+            var dtr = Assert.IsType<Dtr>(records[1]);
             Assert.Equal("Hello", dtr.TextData);
         }
         finally
@@ -121,9 +121,9 @@ public class RoundTripTests
                 records.Add(rec);
 
             Assert.Equal(3, records.Count);
-            Assert.True(records[0].Is<Far>(out var far));
+            var far = Assert.IsType<Far>(records[0]);
             Assert.Equal(2, far.CpuType);
-            Assert.True(records[2].Is<Prr>(out var prr));
+            var prr = Assert.IsType<Prr>(records[2]);
             Assert.Equal(5, prr.NumTestsExecuted);
         }
         finally
@@ -145,9 +145,9 @@ public class RoundTripTests
         var records = StdfFile.Read(original).ToList();
 
         Assert.Equal(2, records.Count);
-        Assert.True(records[1].Is<UnknownRecord>(out var unknown));
-        Assert.Equal(99, unknown.RecType);
-        Assert.Equal(99, unknown.RecSub);
+        var unknown = Assert.IsType<UnknownRecord>(records[1]);
+        Assert.Equal(99, unknown.RecordType);
+        Assert.Equal(99, unknown.RecordSubType);
         Assert.Equal(new byte[] { 0xDE, 0xAD, 0xBE }, unknown.RawData.ToArray());
     }
 

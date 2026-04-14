@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains part count totals per head/site at end of testing.
 /// </summary>
 [StdfRecord(1, 30)]
-public partial record struct Pcr : IHeadSiteRecord
+public partial record class Pcr : IHeadSiteRecord
 {
     /// <summary>
     /// Test head number (255 = summary for all heads). [STDF: HEAD_NUM, U*1]

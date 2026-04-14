@@ -8,7 +8,7 @@ namespace Marklio.Stdf.Records;
 /// after its original creation.
 /// </summary>
 [StdfRecord(0, 20)]
-public partial record struct Atr
+public partial record class Atr
 {
     /// <summary>
     /// Date and time of the file modification. [STDF: MOD_TIM, U*4]

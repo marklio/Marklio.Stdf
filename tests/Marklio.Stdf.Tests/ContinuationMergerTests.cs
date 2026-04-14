@@ -16,14 +16,11 @@ public class ContinuationMergerTests
             PatternBegin = [100UL, 200UL],
             PatternEnd = [150UL, 250UL],
         };
-        var records = new[]
-        {
-            new StdfRecord(psr, 1, 90),
-        };
+        var records = new StdfRecord[] { psr };
 
         var result = records.AsEnumerable().MergeContinuations().ToList();
         Assert.Single(result);
-        Assert.True(result[0].Is<Psr>(out var merged));
+        var merged = Assert.IsType<Psr>(result[0]);
         Assert.Equal(1, merged.PsrIndex);
         Assert.Equal(new ulong[] { 100, 200 }, merged.PatternBegin);
     }
@@ -50,15 +47,11 @@ public class ContinuationMergerTests
             PatternFiles = ["file3.pat", "file4.pat"],
         };
 
-        var records = new[]
-        {
-            new StdfRecord(psr1, 1, 90),
-            new StdfRecord(psr2, 1, 90),
-        };
+        var records = new StdfRecord[] { psr1, psr2 };
 
         var result = records.AsEnumerable().MergeContinuations().ToList();
         Assert.Single(result);
-        Assert.True(result[0].Is<Psr>(out var merged));
+        var merged = Assert.IsType<Psr>(result[0]);
         Assert.Equal(5, merged.PsrIndex);
         Assert.Equal("scan1", merged.PsrName);
         Assert.Equal((ushort)4, merged.TotalPatternCount);
@@ -71,62 +64,62 @@ public class ContinuationMergerTests
     [Fact]
     public void ThreePsrContinuations_MergesAll()
     {
-        var records = new[]
+        var records = new StdfRecord[]
         {
-            new StdfRecord(new Psr { ContinuationFlag = 0x01, PsrIndex = 1, PatternBegin = [1UL] }, 1, 90),
-            new StdfRecord(new Psr { ContinuationFlag = 0x01, PsrIndex = 1, PatternBegin = [2UL] }, 1, 90),
-            new StdfRecord(new Psr { ContinuationFlag = 0, PsrIndex = 1, PatternBegin = [3UL] }, 1, 90),
+            new Psr { ContinuationFlag = 0x01, PsrIndex = 1, PatternBegin = [1UL] },
+            new Psr { ContinuationFlag = 0x01, PsrIndex = 1, PatternBegin = [2UL] },
+            new Psr { ContinuationFlag = 0, PsrIndex = 1, PatternBegin = [3UL] },
         };
 
         var result = records.AsEnumerable().MergeContinuations().ToList();
         Assert.Single(result);
-        Assert.True(result[0].Is<Psr>(out var merged));
+        var merged = Assert.IsType<Psr>(result[0]);
         Assert.Equal(new ulong[] { 1, 2, 3 }, merged.PatternBegin);
     }
 
     [Fact]
     public void NonContinuationRecords_PassThrough()
     {
-        var records = new[]
+        var records = new StdfRecord[]
         {
-            new StdfRecord(new Far { CpuType = 2, StdfVersion = 4 }, 0, 10),
-            new StdfRecord(new Pir { HeadNumber = 1, SiteNumber = 1 }, 5, 10),
-            new StdfRecord(new Prr { HeadNumber = 1, SiteNumber = 1 }, 5, 20),
+            new Far { CpuType = 2, StdfVersion = 4 },
+            new Pir { HeadNumber = 1, SiteNumber = 1 },
+            new Prr { HeadNumber = 1, SiteNumber = 1 },
         };
 
         var result = records.AsEnumerable().MergeContinuations().ToList();
         Assert.Equal(3, result.Count);
-        Assert.True(result[0].Is<Far>(out _));
-        Assert.True(result[1].Is<Pir>(out _));
-        Assert.True(result[2].Is<Prr>(out _));
+        Assert.IsType<Far>(result[0]);
+        Assert.IsType<Pir>(result[1]);
+        Assert.IsType<Prr>(result[2]);
     }
 
     [Fact]
     public void MixedRecordsWithContinuations_PreservesOrder()
     {
-        var records = new[]
+        var records = new StdfRecord[]
         {
-            new StdfRecord(new Far { CpuType = 2, StdfVersion = 4 }, 0, 10),
-            new StdfRecord(new Psr { ContinuationFlag = 0x01, PsrIndex = 1, PatternBegin = [1UL] }, 1, 90),
-            new StdfRecord(new Psr { ContinuationFlag = 0, PsrIndex = 1, PatternBegin = [2UL] }, 1, 90),
-            new StdfRecord(new Pir { HeadNumber = 1, SiteNumber = 1 }, 5, 10),
+            new Far { CpuType = 2, StdfVersion = 4 },
+            new Psr { ContinuationFlag = 0x01, PsrIndex = 1, PatternBegin = [1UL] },
+            new Psr { ContinuationFlag = 0, PsrIndex = 1, PatternBegin = [2UL] },
+            new Pir { HeadNumber = 1, SiteNumber = 1 },
         };
 
         var result = records.AsEnumerable().MergeContinuations().ToList();
         Assert.Equal(3, result.Count);
-        Assert.True(result[0].Is<Far>(out _));
-        Assert.True(result[1].Is<Psr>(out var psr));
+        Assert.IsType<Far>(result[0]);
+        var psr = Assert.IsType<Psr>(result[1]);
         Assert.Equal(new ulong[] { 1, 2 }, psr.PatternBegin);
-        Assert.True(result[2].Is<Pir>(out _));
+        Assert.IsType<Pir>(result[2]);
     }
 
     [Fact]
     public async Task AsyncVersion_Works()
     {
-        var records = new[]
+        var records = new StdfRecord[]
         {
-            new StdfRecord(new Psr { ContinuationFlag = 0x01, PsrIndex = 1, PatternBegin = [1UL] }, 1, 90),
-            new StdfRecord(new Psr { ContinuationFlag = 0, PsrIndex = 1, PatternBegin = [2UL] }, 1, 90),
+            new Psr { ContinuationFlag = 0x01, PsrIndex = 1, PatternBegin = [1UL] },
+            new Psr { ContinuationFlag = 0, PsrIndex = 1, PatternBegin = [2UL] },
         };
 
         var list = new List<StdfRecord>();
@@ -134,7 +127,7 @@ public class ContinuationMergerTests
             list.Add(rec);
 
         Assert.Single(list);
-        Assert.True(list[0].Is<Psr>(out var merged));
+        var merged = Assert.IsType<Psr>(list[0]);
         Assert.Equal(new ulong[] { 1, 2 }, merged.PatternBegin);
     }
 
