@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains summary statistics for a single test across all executions. One record per test per head/site combination.
 /// </summary>
 [StdfRecord(10, 30)]
-public partial record struct Tsr : IHeadSiteRecord
+public partial record class Tsr : IHeadSiteRecord
 {
     /// <summary>
     /// Test head number. A value of 255 indicates a summary for all test heads.

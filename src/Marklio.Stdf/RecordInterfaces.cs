@@ -25,7 +25,7 @@ public interface IHeadSiteRecord : IHeadRecord
 /// </summary>
 /// <example>
 /// <code>
-/// if (rec.Record is IBinRecord bin)
+/// if (rec is IBinRecord bin)
 ///     Console.WriteLine($"Bin {bin.BinNumber}: {bin.BinCount} parts ({bin.PassFail})");
 /// </code>
 /// </example>
@@ -47,7 +47,7 @@ public interface IBinRecord : IHeadSiteRecord
 /// </summary>
 /// <example>
 /// <code>
-/// if (rec.Record is ITestRecord test)
+/// if (rec is ITestRecord test)
 ///     Console.WriteLine($"Test {test.TestNumber} at head {test.HeadNumber} site {test.SiteNumber}");
 /// </code>
 /// </example>

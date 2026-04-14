@@ -69,13 +69,11 @@ public class FarTests
     }
 
     [Fact]
-    public void Far_ImplementsIStdfRecord()
+    public void Far_RecordTypeAndSubType()
     {
-        // Verify the generated IStdfRecord implementation via the static interface
-        Assert.Equal(0, GetRecordType<Far>());
-        Assert.Equal(10, GetRecordSubType<Far>());
+        // Verify record type/subtype via instance properties
+        var far = new Far();
+        Assert.Equal((byte)0, far.RecordType);
+        Assert.Equal((byte)10, far.RecordSubType);
     }
-
-    private static byte GetRecordType<T>() where T : IStdfRecord => T.RecordType;
-    private static byte GetRecordSubType<T>() where T : IStdfRecord => T.RecordSubType;
 }

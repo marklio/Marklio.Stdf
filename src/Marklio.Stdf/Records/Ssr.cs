@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// V4-2007. Defines a scan structure (named set of chains).
 /// </summary>
 [StdfRecord(1, 93)]
-public partial record struct Ssr
+public partial record class Ssr
 {
     /// <summary>
     /// Name of the scan structure.

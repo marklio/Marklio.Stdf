@@ -12,10 +12,12 @@ namespace Marklio.Stdf.Records;
 /// data that does not fit other record types. This record is hand-implemented
 /// (not source-generated) because of the V*n encoding.
 /// </summary>
-public readonly record struct Gdr : IStdfRecord
+public record class Gdr : StdfRecord
 {
-    static byte IStdfRecord.RecordType => 50;
-    static byte IStdfRecord.RecordSubType => 10;
+    /// <inheritdoc/>
+    public override byte RecordType => 50;
+    /// <inheritdoc/>
+    public override byte RecordSubType => 10;
 
     /// <summary>
     /// Array of generic typed fields. Each field is encoded on the wire as a type
@@ -73,7 +75,7 @@ public readonly record struct Gdr : IStdfRecord
     }
 
     /// <summary>Serializes this <see cref="Gdr"/> to the specified writer.</summary>
-    public void Serialize(IBufferWriter<byte> writer, Endianness endianness)
+    protected internal override void Serialize(IBufferWriter<byte> writer, Endianness endianness)
     {
         var span = writer.GetSpan(2);
         if (endianness == Endianness.LittleEndian)

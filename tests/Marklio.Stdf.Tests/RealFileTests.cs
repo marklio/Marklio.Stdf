@@ -31,7 +31,7 @@ public class IntegrationTests(ITestOutputHelper output)
 
         // Detect endianness from FAR for writing
         var endianness = Endianness.LittleEndian;
-        if (records[0].Record is Far farRec)
+        if (records[0] is Far farRec)
             endianness = farRec.CpuType == 1 ? Endianness.BigEndian : Endianness.LittleEndian;
 
         output.WriteLine($"Read {records.Count} records from {originalBytes.Length} bytes (endianness: {endianness})");
@@ -75,28 +75,28 @@ public class IntegrationTests(ITestOutputHelper output)
     {
         var records = StdfFile.Read(SyntheticStdf.MediumLe.Value).ToList();
 
-        Assert.True(records[0].Is<Far>(out var far));
+        var far = Assert.IsType<Far>(records[0]);
         Assert.Equal((byte)2, far.CpuType);
         Assert.Equal((byte)4, far.StdfVersion);
 
-        Assert.Contains(records, r => r.Record is Mir);
-        Assert.Contains(records, r => r.Record is Mrr);
-        Assert.Contains(records, r => r.Record is Wir);
-        Assert.Contains(records, r => r.Record is Wcr);
-        Assert.Contains(records, r => r.Record is Hbr);
-        Assert.Contains(records, r => r.Record is Sbr);
-        Assert.Contains(records, r => r.Record is Pcr);
-        Assert.Contains(records, r => r.Record is Tsr);
-        Assert.Contains(records, r => r.Record is Wrr);
-        Assert.Contains(records, r => r.Record is Bps);
-        Assert.Contains(records, r => r.Record is Eps);
-        Assert.Contains(records, r => r.Record is Dtr);
-        Assert.Contains(records, r => r.Record is Pmr);
-        Assert.Contains(records, r => r.Record is Sdr);
+        Assert.Contains(records, r => r is Mir);
+        Assert.Contains(records, r => r is Mrr);
+        Assert.Contains(records, r => r is Wir);
+        Assert.Contains(records, r => r is Wcr);
+        Assert.Contains(records, r => r is Hbr);
+        Assert.Contains(records, r => r is Sbr);
+        Assert.Contains(records, r => r is Pcr);
+        Assert.Contains(records, r => r is Tsr);
+        Assert.Contains(records, r => r is Wrr);
+        Assert.Contains(records, r => r is Bps);
+        Assert.Contains(records, r => r is Eps);
+        Assert.Contains(records, r => r is Dtr);
+        Assert.Contains(records, r => r is Pmr);
+        Assert.Contains(records, r => r is Sdr);
 
         // Should have balanced PIR/PRR
-        var pirCount = records.Count(r => r.Record is Pir);
-        var prrCount = records.Count(r => r.Record is Prr);
+        var pirCount = records.Count(r => r is Pir);
+        var prrCount = records.Count(r => r is Prr);
         output.WriteLine($"PIR: {pirCount}, PRR: {prrCount}");
         Assert.Equal(pirCount, prrCount);
         Assert.Equal(50, pirCount);
@@ -106,7 +106,7 @@ public class IntegrationTests(ITestOutputHelper output)
     public async Task MediumBe_DetectsEndianness()
     {
         var records = StdfFile.Read(SyntheticStdf.MediumBe.Value).ToList();
-        Assert.True(records[0].Is<Far>(out var far));
+        var far = Assert.IsType<Far>(records[0]);
         Assert.Equal((byte)1, far.CpuType); // big-endian
     }
 
@@ -119,9 +119,9 @@ public class IntegrationTests(ITestOutputHelper output)
 
         foreach (var rec in StdfFile.Read(SyntheticStdf.MediumLe.Value))
         {
-            if (rec.Record is IHeadSiteRecord) headSiteRecords++;
-            if (rec.Record is ITestRecord) testRecords++;
-            if (rec.Record is IBinRecord) binRecords++;
+            if (rec is IHeadSiteRecord) headSiteRecords++;
+            if (rec is ITestRecord) testRecords++;
+            if (rec is IBinRecord) binRecords++;
         }
 
         output.WriteLine($"IHeadSiteRecord: {headSiteRecords}");
@@ -137,7 +137,7 @@ public class IntegrationTests(ITestOutputHelper output)
     {
         foreach (var rec in StdfFile.Read(SyntheticStdf.MediumLe.Value))
         {
-            Assert.False(rec.Record is UnknownRecord,
+            Assert.False(rec is UnknownRecord,
                 $"Unexpected unknown record: type={rec.RecordType}, sub={rec.RecordSubType}");
         }
     }
@@ -165,7 +165,7 @@ public class IntegrationTests(ITestOutputHelper output)
     public void FullMir_AllFieldsPresent()
     {
         var records = StdfFile.Read(SyntheticStdf.FullMir.Value).ToList();
-        Assert.True(records[1].Is<Mir>(out var mir));
+        var mir = Assert.IsType<Mir>(records[1]);
 
         // Verify that even the last fields (>32 bit positions) survived round-trip
         Assert.Equal("SUPER-A", mir.SupervisorName);

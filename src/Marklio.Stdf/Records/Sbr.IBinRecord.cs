@@ -1,6 +1,6 @@
 namespace Marklio.Stdf.Records;
 
-public partial record struct Sbr
+public partial record class Sbr
 {
     /// <summary>
     /// Gets the bin number. This is an <see cref="IBinRecord"/> convenience alias for <see cref="SoftwareBin"/>.

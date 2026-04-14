@@ -8,7 +8,7 @@ namespace Marklio.Stdf.Records;
 /// Contains results of a single functional test execution. One per test per part.
 /// </summary>
 [StdfRecord(15, 20)]
-public partial record struct Ftr : ITestRecord
+public partial record class Ftr : ITestRecord
 {
     /// <summary>Test number from the test program. [STDF: TEST_NUM, U*4]</summary>
     public uint TestNumber { get; set; }

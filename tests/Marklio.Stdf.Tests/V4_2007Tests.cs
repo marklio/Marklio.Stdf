@@ -11,7 +11,7 @@ namespace Marklio.Stdf.Tests;
 /// </summary>
 public class V4_2007Tests
 {
-    private static T RoundTrip<T>(T record, Endianness endianness = Endianness.LittleEndian) where T : IStdfRecord
+    private static T RoundTrip<T>(T record, Endianness endianness = Endianness.LittleEndian) where T : StdfRecord
     {
         var buffer = new ArrayBufferWriter<byte>();
         record.Serialize(buffer, endianness);
@@ -22,7 +22,7 @@ public class V4_2007Tests
         return DeserializeFromBytes<T>(bytes, endianness);
     }
 
-    private static T DeserializeFromBytes<T>(byte[] bytes, Endianness endianness = Endianness.LittleEndian) where T : IStdfRecord
+    private static T DeserializeFromBytes<T>(byte[] bytes, Endianness endianness = Endianness.LittleEndian) where T : StdfRecord
     {
         var seq = new ReadOnlySequence<byte>(bytes);
         var reader = new SequenceReader<byte>(seq);
@@ -32,7 +32,7 @@ public class V4_2007Tests
         return DeserializeSwitch<T>(ref reader, endianness);
     }
 
-    private static T DeserializeSwitch<T>(ref SequenceReader<byte> reader, Endianness endianness) where T : IStdfRecord
+    private static T DeserializeSwitch<T>(ref SequenceReader<byte> reader, Endianness endianness) where T : StdfRecord
     {
         object result = typeof(T).Name switch
         {
@@ -414,9 +414,9 @@ public class V4_2007Tests
             records.Add(rec);
 
         Assert.Equal(2, records.Count);
-        Assert.IsType<Far>(records[0].Record);
-        Assert.IsType<Gdr>(records[1].Record);
-        var resultGdr = (Gdr)records[1].Record;
+        Assert.IsType<Far>(records[0]);
+        Assert.IsType<Gdr>(records[1]);
+        var resultGdr = (Gdr)records[1];
         Assert.Single(resultGdr.Fields);
         Assert.Equal((byte)99, resultGdr.Fields[0].Value);
     }

@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains configuration information for a site group (handler/prober setup). One record per site group.
 /// </summary>
 [StdfRecord(1, 80)]
-public partial record struct Sdr : IHeadRecord
+public partial record class Sdr : IHeadRecord
 {
     /// <summary>
     /// Test head number.

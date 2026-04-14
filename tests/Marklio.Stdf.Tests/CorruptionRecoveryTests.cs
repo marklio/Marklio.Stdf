@@ -35,9 +35,9 @@ public class CorruptionRecoveryTests
         var data = BuildValidStdf();
         var records = StdfFile.Read(data).ToList();
         Assert.Equal(3, records.Count);
-        Assert.True(records[0].Is<Far>(out _));
-        Assert.True(records[1].Is<Pir>(out _));
-        Assert.True(records[2].Is<Pir>(out _));
+        Assert.IsType<Far>(records[0]);
+        Assert.IsType<Pir>(records[1]);
+        Assert.IsType<Pir>(records[2]);
     }
 
     [Fact]
@@ -76,10 +76,10 @@ public class CorruptionRecoveryTests
         };
         var recoveredRecords = StdfFile.Read(data, opts).ToList();
         Assert.True(recoveredRecords.Count >= 3, $"Expected at least 3 records, got {recoveredRecords.Count}");
-        Assert.True(recoveredRecords[0].Is<Far>(out _));
+        Assert.IsType<Far>(recoveredRecords[0]);
 
         // Verify PIRs were recovered
-        var pirs = recoveredRecords.Where(r => r.Is<Pir>(out _)).ToList();
+        var pirs = recoveredRecords.Where(r => r is Pir).ToList();
         Assert.True(pirs.Count >= 1, "Should recover at least one PIR after corruption");
 
         // Recovery event should have been reported
@@ -114,9 +114,9 @@ public class CorruptionRecoveryTests
         var opts = new StdfReaderOptions { RecoveryMode = true };
         var records = StdfFile.Read(data, opts).ToList();
 
-        Assert.True(records[0].Is<Far>(out _));
+        Assert.IsType<Far>(records[0]);
         // Should recover at least one PIR
-        var pirs = records.Where(r => r.Is<Pir>(out _)).ToList();
+        var pirs = records.Where(r => r is Pir).ToList();
         Assert.True(pirs.Count >= 1, $"Expected PIRs after recovery, got {pirs.Count}");
     }
 
@@ -149,8 +149,8 @@ public class CorruptionRecoveryTests
         await foreach (var rec in StdfFile.ReadAsync(stream, opts))
             records.Add(rec);
 
-        Assert.True(records[0].Is<Far>(out _));
-        var pirs = records.Where(r => r.Is<Pir>(out _)).ToList();
+        Assert.IsType<Far>(records[0]);
+        var pirs = records.Where(r => r is Pir).ToList();
         Assert.True(pirs.Count >= 1, "Should recover PIRs after corruption in async mode");
     }
 

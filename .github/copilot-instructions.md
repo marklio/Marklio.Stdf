@@ -31,11 +31,11 @@ The `--no-incremental` flag on build is **required** after changes to the source
 | Decision | Choice | Rationale |
 |---|---|---|
 | STDF versions | V4 + V4-2007 addendum | Covers all modern STDF files; extensible for custom records |
-| Record representation | `partial record struct` + marker attributes | Value-type semantics, zero-alloc streaming, source generator produces the other partial |
+| Record representation | `partial record class` inheriting `StdfRecord` base + marker attributes | Clean type hierarchy, pattern matching via `is`, source generator produces the other partial |
 | Reading API | `IAsyncEnumerable<StdfRecord>` | Composable with LINQ, `await foreach`, pattern matching |
 | I/O engine | `System.IO.Pipelines` | Native .NET high-perf I/O; avoids custom buffering abstractions |
 | Round-trip strategy | Full re-serialize; presence bitmask + trailing data preservation | Byte-identical for untouched records; optimal write for modified records |
-| Field presence | Internal bitmask (`uint`/`ulong`) per struct | Invisible to consumers; tracks which optional fields existed on wire |
+| Field presence | Internal bitmask (`uint`/`ulong`) per class | Invisible to consumers; tracks which optional fields existed on wire |
 | Endianness | Both LE and BE read/write; auto-detect from FAR | STDF spec requires FAR first; peek at CPU_TYP before interpreting REC_LEN |
 | Unknown records | `UnknownRecord` with raw bytes | Enables round-tripping files with vendor-specific or future record types |
 | Count fields | Private throwing property position markers | Zero storage, correct wire position, group-linked via attribute — generator never calls them |
@@ -67,7 +67,7 @@ The `--no-incremental` flag on build is **required** after changes to the source
 
 ## Architecture
 
-This is an STDF (Standard Test Data Format) V4/V4-2007 parser and writer for .NET 10. The core design is: **declare record structs with marker attributes → source generator produces serialization code → I/O layer streams records via System.IO.Pipelines**.
+This is an STDF (Standard Test Data Format) V4/V4-2007 parser and writer for .NET 10. The core design is: **declare record classes inheriting `StdfRecord` with marker attributes → source generator produces serialization code → I/O layer streams records via System.IO.Pipelines**.
 
 ### Projects
 
@@ -81,14 +81,14 @@ This is an STDF (Standard Test Data Format) V4/V4-2007 parser and writer for .NE
 1. **`StdfRecordGenerator`** — Entry point. Hooks `ForAttributeWithMetadataName` on `[StdfRecord]` types. Collects metadata, emits one `*.g.cs` per record plus `RecordRegistry.g.cs`.
 2. **`RecordAnalyzer`** — Walks the **syntax-tree declaration order** of properties in the `[StdfRecord]`-attributed partial declaration. Maps CLR types + attributes to `StdfFieldType`. Skips explicit interface implementations.
 3. **`FieldMetadata`** — Data model passed from analyzer to emitter.
-4. **`RecordEmitter`** — Generates the other `partial` half of each record struct: `_fieldPresence` bitmask, default constructor, `RecordType`/`RecordSubType`, `Deserialize`, `Serialize`, and shared helper methods. Also emits the `RecordRegistry` dispatch table.
+4. **`RecordEmitter`** — Generates the other `partial` half of each record class: `_fieldPresence` bitmask, default constructor, `RecordType`/`RecordSubType` overrides, `Deserialize`, `Serialize`, and shared helper methods. Also emits the `RecordRegistry` dispatch table.
 
 ### I/O layer
 
 - **`StdfFile`** — Public façade. `ReadAsync(path|stream)` → `IAsyncEnumerable<StdfRecord>`. `Read(ReadOnlyMemory<byte>)` → `IEnumerable<StdfRecord>`. `OpenWriteAsync` / `OpenWrite` → `StdfWriter`.
 - **`StdfRecordReader`** — Reads from `PipeReader`. Auto-detects endianness by peeking at the FAR record's `CPU_TYP` byte before interpreting `REC_LEN`.
 - **`StdfRecordWriter`** — Serializes payload first (to compute `REC_LEN`), then writes header + payload + trailing data.
-- **`StdfRecord`** — Wrapper struct holding any `IStdfRecord` plus type/subtype codes and `TrailingData` (for byte-exact round-tripping).
+- **`StdfRecord`** — Abstract base `record class`. All records inherit from this. Defines abstract `RecordType`, `RecordSubType`, `Serialize`, and holds `TrailingData` (for byte-exact round-tripping).
 - **`UnknownRecord`** — Preserves raw payload bytes for unrecognized record types.
 
 ### Record interfaces (for pattern matching)
@@ -104,7 +104,7 @@ Records like HBR/SBR use **explicit interface implementations** to map their spe
 
 ## Record definition conventions
 
-Every generated record is a `public partial record struct` with `[StdfRecord(type, subtype)]` in `src/Marklio.Stdf/Records/`. The source generator produces the other partial.
+Every generated record is a `public partial record class` inheriting from `StdfRecord`, with `[StdfRecord(type, subtype)]` in `src/Marklio.Stdf/Records/`. The source generator produces the other partial.
 
 ### Property order is wire order
 
@@ -153,11 +153,11 @@ Non-nullable `string` properties get `= string.Empty` in the generated construct
 
 ### Properties must use `{ get; set; }`
 
-Not `{ get; init; }` — the generated `Deserialize` method assigns to properties on the result struct.
+Not `{ get; init; }` — the generated `Deserialize` method assigns to properties on the result instance.
 
 ### Hand-implemented records
 
-**GDR** (50,10) and **STR** (15,30) are too complex for the generator (V\*n typed fields, variable-width `U*f` fields). They are `readonly record struct` types implementing `IStdfRecord` directly with hand-written `Deserialize`/`Serialize`. Both are hardcoded in `RecordEmitter.EmitRegistry`.
+**GDR** (50,10) and **STR** (15,30) are too complex for the generator (V\*n typed fields, variable-width `U*f` fields). They are `record class` types inheriting from `StdfRecord` directly with hand-written `Deserialize`/`Serialize`. Both are hardcoded in `RecordEmitter.EmitRegistry`.
 
 If adding a new hand-implemented record, you must also register it in `EmitRegistry` in `RecordEmitter.cs`.
 
@@ -182,5 +182,5 @@ Round-trip correctness is verified by `RealFileTests.RoundTrip_ByteExact` agains
 
 - Changing the source generator requires `dotnet build --no-incremental` to see the effect.
 - When a record has >32 fields (e.g., MIR has 38), the presence bitmask is `ulong`. All bit shift literals in generated code must use the `UL` suffix — `(1UL << bit)` not `(1u << bit)`.
-- Explicit interface implementations on record structs (like `ushort IBinRecord.BinNumber => HardwareBin;`) must be in the same partial declaration but are **skipped** by the analyzer via `ExplicitInterfaceSpecifier` check.
+- Explicit interface implementations on record classes (like `ushort IBinRecord.BinNumber => HardwareBin;`) must be in the same partial declaration but are **skipped** by the analyzer via `ExplicitInterfaceSpecifier` check.
 - Empty counted arrays (count=0) must still set the presence bit for the array field, otherwise the `else return;` pattern halts serialization of all subsequent fields.

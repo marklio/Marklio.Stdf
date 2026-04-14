@@ -6,23 +6,28 @@ namespace Marklio.Stdf;
 /// Represents an STDF record whose type is not recognized by the library.
 /// Preserves raw record bytes for round-tripping.
 /// </summary>
-public readonly record struct UnknownRecord : IStdfRecord
+public sealed record class UnknownRecord : StdfRecord
 {
     /// <summary>The STDF record type code.</summary>
-    public required byte RecType { get; init; }
+    public override byte RecordType { get; }
 
     /// <summary>The STDF record sub-type code.</summary>
-    public required byte RecSub { get; init; }
+    public override byte RecordSubType { get; }
 
     /// <summary>The raw record payload (excluding the 4-byte header).</summary>
     public required ReadOnlyMemory<byte> RawData { get; init; }
 
-    // IStdfRecord: these are instance-level for unknown records since type/sub vary
-    static byte IStdfRecord.RecordType => 0;
-    static byte IStdfRecord.RecordSubType => 0;
+    /// <summary>
+    /// Creates an unknown record with the specified type and sub-type codes.
+    /// </summary>
+    public UnknownRecord(byte recordType, byte recordSubType)
+    {
+        RecordType = recordType;
+        RecordSubType = recordSubType;
+    }
 
     /// <summary>Writes the raw bytes directly to the buffer.</summary>
-    public void Serialize(IBufferWriter<byte> writer, Endianness endianness)
+    protected internal override void Serialize(IBufferWriter<byte> writer, Endianness endianness)
     {
         if (RawData.Length > 0)
         {

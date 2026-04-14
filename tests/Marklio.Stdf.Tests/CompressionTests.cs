@@ -110,7 +110,7 @@ public class CompressionTests
 
             var reRead = await StdfFile.ReadAsync(tempPath).ToListAsync();
             Assert.Equal(originalRecords.Count, reRead.Count);
-            Assert.True(reRead[0].Is<Far>(out var far));
+            var far = Assert.IsType<Far>(reRead[0]);
             Assert.Equal((byte)1, far.CpuType); // big-endian preserved
         }
         finally

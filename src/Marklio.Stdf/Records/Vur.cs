@@ -8,7 +8,7 @@ namespace Marklio.Stdf.Records;
 /// or updates used by this file so readers can determine compatibility.
 /// </summary>
 [StdfRecord(0, 30)]
-public partial record struct Vur
+public partial record class Vur
 {
     [WireCount("upd")] private byte UpdateCount => throw new NotSupportedException();
 

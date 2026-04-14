@@ -93,7 +93,7 @@ Console.WriteLine($"Wrote {FileName}");
 Console.WriteLine();
 
 // ── Step 2: Read the file back and print a summary ───────────────
-// TryGetRecord<T>() is the canonical way to match a specific record type.
+// Pattern matching is the canonical way to match a specific record type.
 
 string? lotId = null;
 int partCount = 0;
@@ -101,24 +101,24 @@ int testCount = 0;
 
 await foreach (var rec in StdfFile.ReadAsync(FileName))
 {
-    if (rec.TryGetRecord<Mir>(out var mir))
+    if (rec is Mir mir)
     {
         lotId = mir.LotId;
         Console.WriteLine($"Lot : {mir.LotId}");
         Console.WriteLine($"Part type : {mir.PartType}");
         Console.WriteLine($"Tester : {mir.NodeName}");
     }
-    else if (rec.TryGetRecord<Ptr>(out var ptr))
+    else if (rec is Ptr ptr)
     {
         testCount++;
         Console.WriteLine($"  Test {ptr.TestNumber} ({ptr.TestText}): {ptr.Result} {ptr.Units}");
     }
-    else if (rec.TryGetRecord<Prr>(out var prr))
+    else if (rec is Prr prr)
     {
         partCount++;
         Console.WriteLine($"  Part {prr.PartId} — bin {prr.HardwareBin}, {prr.NumTestsExecuted} tests");
     }
-    else if (rec.TryGetRecord<Mrr>(out var mrr))
+    else if (rec is Mrr mrr)
     {
         Console.WriteLine($"Finished : {mrr.FinishTime:u}");
     }

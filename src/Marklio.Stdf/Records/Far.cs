@@ -8,7 +8,7 @@ namespace Marklio.Stdf.Records;
 /// (byte ordering) and STDF specification version used by the file.
 /// </summary>
 [StdfRecord(0, 10)]
-public partial record struct Far
+public partial record class Far
 {
     /// <summary>
     /// CPU type that wrote the file (1 = big-endian, e.g. SPARC; 2 = little-endian, e.g. x86).

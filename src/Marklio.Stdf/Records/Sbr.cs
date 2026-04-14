@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains the count of parts sorted into a software bin. One record per bin per head/site combination.
 /// </summary>
 [StdfRecord(1, 50)]
-public partial record struct Sbr : IBinRecord
+public partial record class Sbr : IBinRecord
 {
     /// <summary>
     /// Test head number. A value of 255 indicates a summary for all test heads.

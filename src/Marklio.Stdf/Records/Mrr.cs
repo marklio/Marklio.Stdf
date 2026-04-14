@@ -8,7 +8,7 @@ namespace Marklio.Stdf.Records;
 /// for the test lot, including finish time and disposition.
 /// </summary>
 [StdfRecord(1, 20)]
-public partial record struct Mrr
+public partial record class Mrr
 {
     /// <summary>
     /// Date and time testing completed. [STDF: FINISH_T, U*4]

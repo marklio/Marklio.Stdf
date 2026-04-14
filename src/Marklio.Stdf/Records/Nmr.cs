@@ -8,7 +8,7 @@ namespace Marklio.Stdf.Records;
 /// Arrays share the "loc" count group (LOCM_CNT). TOTM_CNT provides the total count across all continuations.
 /// </summary>
 [StdfRecord(1, 91)]
-public partial record struct Nmr
+public partial record class Nmr
 {
     /// <summary>
     /// Continuation flag. Bit 0: if set, this record continues in the next NMR record.

@@ -9,7 +9,7 @@ namespace Marklio.Stdf.Records;
 /// Arrays share the "loc" count group (LOCP_CNT). TOTP_CNT provides the total count across all continuations.
 /// </summary>
 [StdfRecord(1, 90)]
-public partial record struct Psr
+public partial record class Psr
 {
     /// <summary>
     /// Continuation flag. Bit 0: if set, this record continues in the next PSR record.

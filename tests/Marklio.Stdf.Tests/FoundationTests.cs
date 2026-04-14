@@ -17,24 +17,23 @@ public class FoundationTests
     public void UnknownRecord_PreservesRawData()
     {
         byte[] data = [0x01, 0x02, 0x03];
-        var record = new UnknownRecord { RecType = 99, RecSub = 1, RawData = data };
+        var record = new UnknownRecord(99, 1) { RawData = data };
 
-        Assert.Equal(99, record.RecType);
-        Assert.Equal(1, record.RecSub);
+        Assert.Equal(99, record.RecordType);
+        Assert.Equal(1, record.RecordSubType);
         Assert.Equal(3, record.RawData.Length);
         Assert.True(record.RawData.Span.SequenceEqual(data));
     }
 
     [Fact]
-    public void StdfRecord_Wrapper_SupportsPatternMatching()
+    public void StdfRecord_SupportsPatternMatching()
     {
-        var unknown = new UnknownRecord { RecType = 50, RecSub = 10, RawData = ReadOnlyMemory<byte>.Empty };
-        var wrapper = new StdfRecord(unknown, 50, 10);
+        StdfRecord record = new UnknownRecord(50, 10) { RawData = ReadOnlyMemory<byte>.Empty };
 
-        Assert.Equal(50, wrapper.RecordType);
-        Assert.Equal(10, wrapper.RecordSubType);
-        Assert.True(wrapper.Is<UnknownRecord>(out var typed));
-        Assert.Equal(50, typed.RecType);
+        Assert.Equal(50, record.RecordType);
+        Assert.Equal(10, record.RecordSubType);
+        var typed = Assert.IsType<UnknownRecord>(record);
+        Assert.Equal(50, typed.RecordType);
     }
 
     [Fact]

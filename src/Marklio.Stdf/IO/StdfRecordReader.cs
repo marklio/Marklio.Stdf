@@ -96,25 +96,23 @@ internal sealed class StdfRecordReader
                 {
                     // Dispatch to generated deserializer
                     var record = RecordRegistry.Deserialize(recType, recSub, ref payloadReader, _endianness);
-                    if (record.HasValue)
+                    if (record != null)
                     {
                         // Capture any trailing bytes not consumed by the deserializer
-                        ReadOnlyMemory<byte> trailing = default;
                         if (payloadReader.Remaining > 0)
                         {
                             var trailingBytes = new byte[payloadReader.Remaining];
                             payloadReader.TryCopyTo(trailingBytes);
-                            trailing = trailingBytes;
+                            record.TrailingData = trailingBytes;
                         }
 
-                        yielded = new StdfRecord(record.Value.Record, recType, recSub, trailing);
+                        yielded = record;
                     }
                     else
                     {
                         // Unknown record — preserve raw bytes
                         var rawData = payloadSlice.ToArray();
-                        var unknown = new UnknownRecord { RecType = recType, RecSub = recSub, RawData = rawData };
-                        yielded = new StdfRecord(unknown, recType, recSub);
+                        yielded = new UnknownRecord(recType, recSub) { RawData = rawData };
                     }
                 }
                 catch when (_options.RecoveryMode)
@@ -131,8 +129,8 @@ internal sealed class StdfRecordReader
                 _bytesConsumed += totalRecordSize;
                 buffer = buffer.Slice(totalRecordSize);
 
-                if (yielded.HasValue)
-                    yield return yielded.Value;
+                if (yielded != null)
+                    yield return yielded;
             }
 
             _pipeReader.AdvanceTo(buffer.Start, buffer.End);

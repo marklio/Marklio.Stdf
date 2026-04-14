@@ -9,7 +9,7 @@ namespace Marklio.Stdf.Records;
 /// lot identity, and program details.
 /// </summary>
 [StdfRecord(1, 10)]
-public partial record struct Mir
+public partial record class Mir
 {
     /// <summary>
     /// Date and time of job setup. [STDF: SETUP_T, U*4]

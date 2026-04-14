@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Marks the beginning of a named program section.
 /// </summary>
 [StdfRecord(20, 10)]
-public partial record struct Bps
+public partial record class Bps
 {
     /// <summary>
     /// Name or ID of the program section.

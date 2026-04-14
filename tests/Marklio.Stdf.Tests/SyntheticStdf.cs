@@ -66,8 +66,8 @@ internal static class SyntheticStdf
     private static async Task WriteSmallStdf(IO.StdfRecordWriter writer, Endianness endianness)
     {
         byte cpuType = endianness == Endianness.BigEndian ? (byte)1 : (byte)2;
-        await writer.WriteAsync(Wrap(new Far { CpuType = cpuType, StdfVersion = 4 }));
-        await writer.WriteAsync(Wrap(new Mir
+        await writer.WriteAsync(new Far { CpuType = cpuType, StdfVersion = 4 });
+        await writer.WriteAsync(new Mir
         {
             SetupTime = new DateTime(2025, 1, 15, 10, 0, 0, DateTimeKind.Utc),
             StartTime = new DateTime(2025, 1, 15, 10, 5, 0, DateTimeKind.Utc),
@@ -77,9 +77,9 @@ internal static class SyntheticStdf
             PartType = "CHIP-A",
             NodeName = "TESTER-1",
             JobName = "TEST_JOB",
-        }));
-        await writer.WriteAsync(Wrap(new Pir { HeadNumber = 1, SiteNumber = 1 }));
-        await writer.WriteAsync(Wrap(new Ptr
+        });
+        await writer.WriteAsync(new Pir { HeadNumber = 1, SiteNumber = 1 });
+        await writer.WriteAsync(new Ptr
         {
             TestNumber = 1000,
             HeadNumber = 1,
@@ -89,8 +89,8 @@ internal static class SyntheticStdf
             Result = 3.14f,
             TestText = "Vcc_test",
             Units = "V",
-        }));
-        await writer.WriteAsync(Wrap(new Prr
+        });
+        await writer.WriteAsync(new Prr
         {
             HeadNumber = 1,
             SiteNumber = 1,
@@ -102,18 +102,18 @@ internal static class SyntheticStdf
             YCoordinate = 10,
             TestTime = 100,
             PartId = "P001",
-        }));
-        await writer.WriteAsync(Wrap(new Mrr
+        });
+        await writer.WriteAsync(new Mrr
         {
             FinishTime = new DateTime(2025, 1, 15, 11, 0, 0, DateTimeKind.Utc),
-        }));
+        });
     }
 
     private static async Task WriteMediumStdf(IO.StdfRecordWriter writer, Endianness endianness)
     {
         byte cpuType = endianness == Endianness.BigEndian ? (byte)1 : (byte)2;
-        await writer.WriteAsync(Wrap(new Far { CpuType = cpuType, StdfVersion = 4 }));
-        await writer.WriteAsync(Wrap(new Mir
+        await writer.WriteAsync(new Far { CpuType = cpuType, StdfVersion = 4 });
+        await writer.WriteAsync(new Mir
         {
             SetupTime = new DateTime(2025, 3, 1, 8, 0, 0, DateTimeKind.Utc),
             StartTime = new DateTime(2025, 3, 1, 8, 5, 0, DateTimeKind.Utc),
@@ -131,26 +131,26 @@ internal static class SyntheticStdf
             JobRevision = "1.0",
             FacilityId = "FAC01",
             FloorId = "FL3",
-        }));
+        });
 
         // WIR + WCR
-        await writer.WriteAsync(Wrap(new Wir
+        await writer.WriteAsync(new Wir
         {
             HeadNumber = 1,
             StartTime = new DateTime(2025, 3, 1, 8, 10, 0, DateTimeKind.Utc),
             WaferId = "W001",
-        }));
-        await writer.WriteAsync(Wrap(new Wcr
+        });
+        await writer.WriteAsync(new Wcr
         {
             WaferSize = 300_000.0f,
             DieHeight = 5000.0f,
             DieWidth = 5000.0f,
             WaferUnits = 2, // millimeters
             WaferFlat = 'U',
-        }));
+        });
 
         // PMR
-        await writer.WriteAsync(Wrap(new Pmr
+        await writer.WriteAsync(new Pmr
         {
             PinIndex = 1,
             ChannelType = 0,
@@ -159,34 +159,34 @@ internal static class SyntheticStdf
             LogicalName = "VCC_SUPPLY",
             HeadNumber = 1,
             SiteNumber = 1,
-        }));
+        });
 
         // SDR
-        await writer.WriteAsync(Wrap(new Sdr
+        await writer.WriteAsync(new Sdr
         {
             HeadNumber = 1,
             SiteGroup = 0,
             SiteNumbers = [1, 2, 3, 4],
             HandlerType = "HANDLER-A",
-        }));
+        });
 
         // BPS - begin program section
-        await writer.WriteAsync(Wrap(new Bps { SequenceName = "DC_TESTS" }));
+        await writer.WriteAsync(new Bps { SequenceName = "DC_TESTS" });
 
         // DTR - data text
-        await writer.WriteAsync(Wrap(new Dtr { TextData = "Starting DC parametric tests..." }));
+        await writer.WriteAsync(new Dtr { TextData = "Starting DC parametric tests..." });
 
         // 50 PIR/PTR/FTR/PRR cycles with varied data
         var rng = new Random(42); // deterministic seed
         for (int part = 0; part < 50; part++)
         {
             byte site = (byte)((part % 4) + 1);
-            await writer.WriteAsync(Wrap(new Pir { HeadNumber = 1, SiteNumber = site }));
+            await writer.WriteAsync(new Pir { HeadNumber = 1, SiteNumber = site });
 
             // 3 parametric tests per part
             for (int t = 0; t < 3; t++)
             {
-                await writer.WriteAsync(Wrap(new Ptr
+                await writer.WriteAsync(new Ptr
                 {
                     TestNumber = (uint)(1000 + t),
                     HeadNumber = 1,
@@ -200,20 +200,20 @@ internal static class SyntheticStdf
                     HighLimit = 4.5f,
                     LowSpecLimit = 0.1f,
                     HighSpecLimit = 4.9f,
-                }));
+                });
             }
 
             // 1 functional test per part
-            await writer.WriteAsync(Wrap(new Ftr
+            await writer.WriteAsync(new Ftr
             {
                 TestNumber = 2000,
                 HeadNumber = 1,
                 SiteNumber = site,
                 TestFlags = (byte)(part % 10 == 7 ? 1 : 0), // occasional fail
-            }));
+            });
 
             bool pass = part % 10 != 7;
-            await writer.WriteAsync(Wrap(new Prr
+            await writer.WriteAsync(new Prr
             {
                 HeadNumber = 1,
                 SiteNumber = site,
@@ -225,14 +225,14 @@ internal static class SyntheticStdf
                 YCoordinate = (short)(part / 10),
                 TestTime = (uint)(50 + rng.Next(100)),
                 PartId = $"P{part:D4}",
-            }));
+            });
         }
 
         // EPS - end program section
-        await writer.WriteAsync(Wrap(new Eps()));
+        await writer.WriteAsync(new Eps());
 
         // HBR / SBR
-        await writer.WriteAsync(Wrap(new Hbr
+        await writer.WriteAsync(new Hbr
         {
             HeadNumber = 255,
             SiteNumber = 0,
@@ -240,8 +240,8 @@ internal static class SyntheticStdf
             BinCount = 45,
             BinPassFail = 'P',
             BinName = "GOOD",
-        }));
-        await writer.WriteAsync(Wrap(new Hbr
+        });
+        await writer.WriteAsync(new Hbr
         {
             HeadNumber = 255,
             SiteNumber = 0,
@@ -249,8 +249,8 @@ internal static class SyntheticStdf
             BinCount = 5,
             BinPassFail = 'F',
             BinName = "FUNC_FAIL",
-        }));
-        await writer.WriteAsync(Wrap(new Sbr
+        });
+        await writer.WriteAsync(new Sbr
         {
             HeadNumber = 255,
             SiteNumber = 0,
@@ -258,8 +258,8 @@ internal static class SyntheticStdf
             BinCount = 45,
             BinPassFail = 'P',
             BinName = "PASS",
-        }));
-        await writer.WriteAsync(Wrap(new Sbr
+        });
+        await writer.WriteAsync(new Sbr
         {
             HeadNumber = 255,
             SiteNumber = 0,
@@ -267,10 +267,10 @@ internal static class SyntheticStdf
             BinCount = 5,
             BinPassFail = 'F',
             BinName = "FAIL",
-        }));
+        });
 
         // PCR
-        await writer.WriteAsync(Wrap(new Pcr
+        await writer.WriteAsync(new Pcr
         {
             HeadNumber = 255,
             SiteNumber = 0,
@@ -279,10 +279,10 @@ internal static class SyntheticStdf
             AbortCount = 0,
             GoodCount = 45,
             FunctionalCount = 50,
-        }));
+        });
 
         // TSR
-        await writer.WriteAsync(Wrap(new Tsr
+        await writer.WriteAsync(new Tsr
         {
             HeadNumber = 255,
             SiteNumber = 0,
@@ -291,10 +291,10 @@ internal static class SyntheticStdf
             ExecutedCount = 50,
             FailedCount = 5,
             TestName = "Param_Test_0",
-        }));
+        });
 
         // WRR
-        await writer.WriteAsync(Wrap(new Wrr
+        await writer.WriteAsync(new Wrr
         {
             HeadNumber = 1,
             FinishTime = new DateTime(2025, 3, 1, 9, 0, 0, DateTimeKind.Utc),
@@ -304,22 +304,22 @@ internal static class SyntheticStdf
             GoodCount = 45,
             FunctionalCount = 50,
             WaferId = "W001",
-        }));
+        });
 
         // MRR
-        await writer.WriteAsync(Wrap(new Mrr
+        await writer.WriteAsync(new Mrr
         {
             FinishTime = new DateTime(2025, 3, 1, 9, 5, 0, DateTimeKind.Utc),
             DispositionCode = ' ',
-        }));
+        });
     }
 
     private static async Task WriteFullMirStdf(IO.StdfRecordWriter writer)
     {
-        await writer.WriteAsync(Wrap(new Far { CpuType = 2, StdfVersion = 4 }));
+        await writer.WriteAsync(new Far { CpuType = 2, StdfVersion = 4 });
 
         // MIR with all 38 fields populated — tests >32-field presence bit logic
-        await writer.WriteAsync(Wrap(new Mir
+        await writer.WriteAsync(new Mir
         {
             SetupTime = new DateTime(2025, 6, 15, 10, 0, 0, DateTimeKind.Utc),
             StartTime = new DateTime(2025, 6, 15, 10, 5, 0, DateTimeKind.Utc),
@@ -359,11 +359,11 @@ internal static class SyntheticStdf
             RomCode = "ROM-42",
             SerialNumber = "SN-12345",
             SupervisorName = "SUPER-A",
-        }));
+        });
 
         // Minimal part cycle to make a valid file
-        await writer.WriteAsync(Wrap(new Pir { HeadNumber = 1, SiteNumber = 1 }));
-        await writer.WriteAsync(Wrap(new Prr
+        await writer.WriteAsync(new Pir { HeadNumber = 1, SiteNumber = 1 });
+        await writer.WriteAsync(new Prr
         {
             HeadNumber = 1,
             SiteNumber = 1,
@@ -371,13 +371,10 @@ internal static class SyntheticStdf
             NumTestsExecuted = 0,
             HardwareBin = 1,
             SoftwareBin = 1,
-        }));
-        await writer.WriteAsync(Wrap(new Mrr
+        });
+        await writer.WriteAsync(new Mrr
         {
             FinishTime = new DateTime(2025, 6, 15, 11, 0, 0, DateTimeKind.Utc),
-        }));
+        });
     }
-
-    private static StdfRecord Wrap<T>(T record) where T : struct, IStdfRecord
-        => new(record, T.RecordType, T.RecordSubType);
 }

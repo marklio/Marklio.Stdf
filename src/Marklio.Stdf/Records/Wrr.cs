@@ -7,7 +7,7 @@ namespace Marklio.Stdf.Records;
 /// Contains summary results for a wafer. One per wafer.
 /// </summary>
 [StdfRecord(2, 20)]
-public partial record struct Wrr : IHeadRecord
+public partial record class Wrr : IHeadRecord
 {
     /// <summary>
     /// Test head number. [STDF: HEAD_NUM, U*1]
