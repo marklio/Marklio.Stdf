@@ -29,8 +29,7 @@ public class OrderingValidatorTests
 
         var result = await Collect(records.ValidateOrdering());
 
-        var error = Assert.Single(result.OfType<ErrorRecord>());
-        Assert.Equal("STDF_ORDER_NO_FAR", error.Code);
+        var error = result.OfType<ErrorRecord>().Single(e => e.Code == "STDF_ORDER_NO_FAR");
         Assert.Equal(ErrorSeverity.Error, error.Severity);
     }
 
@@ -43,7 +42,7 @@ public class OrderingValidatorTests
 
         var result = await Collect(records.ValidateOrdering());
 
-        var error = Assert.Single(result.OfType<ErrorRecord>());
+        var error = result.OfType<ErrorRecord>().First(e => e.Code == "STDF_ORDER_MIR_EXPECTED");
         Assert.Equal("STDF_ORDER_MIR_EXPECTED", error.Code);
     }
 
@@ -57,7 +56,7 @@ public class OrderingValidatorTests
 
         var result = await Collect(records.ValidateOrdering());
 
-        var error = Assert.Single(result.OfType<ErrorRecord>());
+        var error = result.OfType<ErrorRecord>().Single(e => e.Code == "STDF_ORDER_NO_PIR");
         Assert.Equal("STDF_ORDER_NO_PIR", error.Code);
     }
 
@@ -72,7 +71,7 @@ public class OrderingValidatorTests
 
         var result = await Collect(records.ValidateOrdering());
 
-        var error = Assert.Single(result.OfType<ErrorRecord>());
+        var error = result.OfType<ErrorRecord>().Single(e => e.Code == "STDF_ORDER_DUPLICATE_PIR");
         Assert.Equal("STDF_ORDER_DUPLICATE_PIR", error.Code);
     }
 
@@ -86,7 +85,7 @@ public class OrderingValidatorTests
 
         var result = await Collect(records.ValidateOrdering());
 
-        var error = Assert.Single(result.OfType<ErrorRecord>());
+        var error = result.OfType<ErrorRecord>().Single(e => e.Code == "STDF_ORDER_NO_MATCHING_PIR");
         Assert.Equal("STDF_ORDER_NO_MATCHING_PIR", error.Code);
     }
 
@@ -101,7 +100,7 @@ public class OrderingValidatorTests
 
         var result = await Collect(records.ValidateOrdering());
 
-        var error = Assert.Single(result.OfType<ErrorRecord>());
+        var error = result.OfType<ErrorRecord>().Single(e => e.Code == "STDF_ORDER_TEST_AFTER_SUMMARY");
         Assert.Equal("STDF_ORDER_TEST_AFTER_SUMMARY", error.Code);
     }
 
@@ -177,8 +176,89 @@ public class OrderingValidatorTests
 
         var result = await Collect(records.ValidateOrdering());
 
-        var error = Assert.Single(result.OfType<ErrorRecord>());
+        var error = result.OfType<ErrorRecord>().Single(e => e.Code == "STDF_ORDER_UNPAIRED_BPS");
         Assert.Equal("STDF_ORDER_UNPAIRED_BPS", error.Code);
+    }
+
+    [Fact]
+    public async Task EmptyStream_ProducesNoFarError()
+    {
+        var records = ToAsync();
+
+        var result = await Collect(records.ValidateOrdering());
+
+        var error = Assert.Single(result.OfType<ErrorRecord>());
+        Assert.Equal("STDF_ORDER_NO_FAR", error.Code);
+        Assert.Equal(ErrorSeverity.Error, error.Severity);
+    }
+
+    [Fact]
+    public async Task FarOnly_ProducesMirExpectedError()
+    {
+        var records = ToAsync(new Far { CpuType = 2, StdfVersion = 4 });
+
+        var result = await Collect(records.ValidateOrdering());
+
+        var error = Assert.Single(result.OfType<ErrorRecord>());
+        Assert.Equal("STDF_ORDER_MIR_EXPECTED", error.Code);
+        Assert.Equal(ErrorSeverity.Error, error.Severity);
+    }
+
+    [Fact]
+    public async Task NoMrr_ProducesWarning()
+    {
+        var records = ToAsync(
+            new Far { CpuType = 2, StdfVersion = 4 },
+            new Mir());
+
+        var result = await Collect(records.ValidateOrdering());
+
+        var error = Assert.Single(result.OfType<ErrorRecord>());
+        Assert.Equal("STDF_ORDER_NO_MRR", error.Code);
+        Assert.Equal(ErrorSeverity.Warning, error.Severity);
+    }
+
+    [Fact]
+    public async Task UnclosedPir_AtEndOfStream_ProducesError()
+    {
+        var records = ToAsync(
+            new Far { CpuType = 2, StdfVersion = 4 },
+            new Mir(),
+            new Pir { HeadNumber = 1, SiteNumber = 1 },
+            new Mrr());
+
+        var result = await Collect(records.ValidateOrdering());
+
+        var error = result.OfType<ErrorRecord>().Single(e => e.Code == "STDF_ORDER_UNCLOSED_PIR");
+        Assert.Equal(ErrorSeverity.Error, error.Severity);
+        Assert.Contains("head 1", error.Message);
+        Assert.Contains("site 1", error.Message);
+    }
+
+    [Fact]
+    public async Task UnclosedBps_AtEndOfStream_ProducesError()
+    {
+        var records = ToAsync(
+            new Far { CpuType = 2, StdfVersion = 4 },
+            new Mir(),
+            new Bps { SequenceName = "test" },
+            new Mrr());
+
+        var result = await Collect(records.ValidateOrdering());
+
+        var error = result.OfType<ErrorRecord>().Single(e => e.Code == "STDF_ORDER_UNPAIRED_BPS");
+        Assert.Equal(ErrorSeverity.Error, error.Severity);
+    }
+
+    [Fact]
+    public void SyncVersion_EmptyStream_ProducesNoFarError()
+    {
+        var records = Array.Empty<StdfRecord>();
+
+        var result = records.AsEnumerable().ValidateOrdering().ToList();
+
+        var error = Assert.Single(result.OfType<ErrorRecord>());
+        Assert.Equal("STDF_ORDER_NO_FAR", error.Code);
     }
 
     private static async IAsyncEnumerable<StdfRecord> ToAsync(params StdfRecord[] records)

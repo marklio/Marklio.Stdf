@@ -41,6 +41,9 @@ public static class OrderingValidator
 
             yield return rec;
         }
+
+        foreach (var error in ValidateEndOfStream(st, openPirs))
+            yield return error;
     }
 
     /// <summary>
@@ -60,6 +63,9 @@ public static class OrderingValidator
 
             yield return rec;
         }
+
+        foreach (var error in ValidateEndOfStream(st, openPirs))
+            yield return error;
     }
 
     private static List<ErrorRecord>? Validate(
@@ -175,5 +181,58 @@ public static class OrderingValidator
         }
 
         return errors;
+    }
+
+    private static IEnumerable<StdfRecord> ValidateEndOfStream(
+        OrderingState st, HashSet<(byte head, byte site)> openPirs)
+    {
+        if (st.State == FileState.ExpectFar)
+        {
+            yield return new ErrorRecord
+            {
+                Severity = ErrorSeverity.Error,
+                Code = "STDF_ORDER_NO_FAR",
+                Message = "Stream ended without a FAR record.",
+            };
+        }
+        else if (st.State == FileState.ExpectMir)
+        {
+            yield return new ErrorRecord
+            {
+                Severity = ErrorSeverity.Error,
+                Code = "STDF_ORDER_MIR_EXPECTED",
+                Message = "Stream ended without a MIR record.",
+            };
+        }
+
+        foreach (var (head, site) in openPirs)
+        {
+            yield return new ErrorRecord
+            {
+                Severity = ErrorSeverity.Error,
+                Code = "STDF_ORDER_UNCLOSED_PIR",
+                Message = $"PIR for head {head}, site {site} was never closed by a matching PRR.",
+            };
+        }
+
+        if (st.BpsDepth > 0)
+        {
+            yield return new ErrorRecord
+            {
+                Severity = ErrorSeverity.Error,
+                Code = "STDF_ORDER_UNPAIRED_BPS",
+                Message = $"BPS was opened but never closed by a matching EPS ({st.BpsDepth} level(s) deep).",
+            };
+        }
+
+        if (st.State is not FileState.Done and not FileState.ExpectFar and not FileState.ExpectMir)
+        {
+            yield return new ErrorRecord
+            {
+                Severity = ErrorSeverity.Warning,
+                Code = "STDF_ORDER_NO_MRR",
+                Message = "Stream ended without an MRR record.",
+            };
+        }
     }
 }
