@@ -15,22 +15,54 @@ public static class TestSummaryGenerator
     /// Re-emits the STDF stream with missing TSR records inserted before the first WRR
     /// (or MRR, or at end). TSR records are computed from PTR, FTR, and MPR data.
     /// </summary>
+    /// <remarks>
+    /// This method streams records through without buffering. Statistics are accumulated
+    /// as records pass through, and generated summaries are inserted before the first
+    /// WRR or MRR record. For correct deduplication, input should follow STDF V4 ordering
+    /// (summary records before WRR/MRR).
+    /// </remarks>
     public static async IAsyncEnumerable<StdfRecord> GenerateTestSummaries(
         this IAsyncEnumerable<StdfRecord> source,
         SummaryScope scope = SummaryScope.All,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var records = new List<StdfRecord>();
-        await foreach (var rec in source.WithCancellation(cancellationToken).ConfigureAwait(false))
-            records.Add(rec);
+        var accumulators = new Dictionary<(byte Head, byte Site, uint TestNumber), TestAccumulator>();
+        var existing = new HashSet<(byte Head, byte Site, uint TestNumber)>();
+        bool flushed = false;
 
-        foreach (var rec in EmitWithSummaries(records, scope))
+        await foreach (var rec in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            if (rec is Tsr tsr && tsr.TestNumber.HasValue)
+                existing.Add((tsr.HeadNumber, tsr.SiteNumber, tsr.TestNumber.Value));
+
+            AccumulateTestRecord(rec, accumulators);
+
+            if (!flushed && rec is Wrr or Mrr)
+            {
+                foreach (var summary in BuildSummaries(accumulators, existing, scope))
+                    yield return summary;
+                flushed = true;
+            }
+
             yield return rec;
+        }
+
+        if (!flushed)
+        {
+            foreach (var summary in BuildSummaries(accumulators, existing, scope))
+                yield return summary;
+        }
     }
 
     /// <summary>
     /// Synchronous version of <see cref="GenerateTestSummaries(IAsyncEnumerable{StdfRecord}, SummaryScope, CancellationToken)"/>.
     /// </summary>
+    /// <remarks>
+    /// This method streams records through without buffering. Statistics are accumulated
+    /// as records pass through, and generated summaries are inserted before the first
+    /// WRR or MRR record. For correct deduplication, input should follow STDF V4 ordering
+    /// (summary records before WRR/MRR).
+    /// </remarks>
     public static IEnumerable<StdfRecord> GenerateTestSummaries(
         this IEnumerable<StdfRecord> source,
         SummaryScope scope = SummaryScope.All)
@@ -39,174 +71,213 @@ public static class TestSummaryGenerator
 
         static IEnumerable<StdfRecord> Core(IEnumerable<StdfRecord> source, SummaryScope scope)
         {
-            var records = source.ToList();
-            foreach (var rec in EmitWithSummaries(records, scope))
+            var accumulators = new Dictionary<(byte Head, byte Site, uint TestNumber), TestAccumulator>();
+            var existing = new HashSet<(byte Head, byte Site, uint TestNumber)>();
+            bool flushed = false;
+
+            foreach (var rec in source)
+            {
+                if (rec is Tsr tsr && tsr.TestNumber.HasValue)
+                    existing.Add((tsr.HeadNumber, tsr.SiteNumber, tsr.TestNumber.Value));
+
+                AccumulateTestRecord(rec, accumulators);
+
+                if (!flushed && rec is Wrr or Mrr)
+                {
+                    foreach (var summary in BuildSummaries(accumulators, existing, scope))
+                        yield return summary;
+                    flushed = true;
+                }
+
                 yield return rec;
+            }
+
+            if (!flushed)
+            {
+                foreach (var summary in BuildSummaries(accumulators, existing, scope))
+                    yield return summary;
+            }
         }
     }
 
-    private static IEnumerable<StdfRecord> EmitWithSummaries(List<StdfRecord> records, SummaryScope scope)
+    private static void AccumulateTestRecord(
+        StdfRecord rec,
+        Dictionary<(byte Head, byte Site, uint TestNumber), TestAccumulator> accumulators)
     {
-        var existingTsrs = new HashSet<(byte Head, byte Site, uint TestNum)>();
-        foreach (var rec in records)
+        switch (rec)
         {
-            if (rec is Tsr tsr && tsr.TestNumber.HasValue)
-                existingTsrs.Add((tsr.HeadNumber, tsr.SiteNumber, tsr.TestNumber.Value));
+            case Ptr ptr:
+            {
+                var key = (ptr.HeadNumber, ptr.SiteNumber, ptr.TestNumber);
+                var acc = GetOrCreateAccumulator(accumulators, key);
+                acc.ExecutedCount++;
+                acc.TestType = 'P';
+                acc.TestName ??= ptr.TestText;
+                var flags = (TestResultFlags)ptr.TestFlags;
+                if ((flags & TestResultFlags.Failed) != 0) acc.FailedCount++;
+                if ((flags & TestResultFlags.Alarm) != 0) acc.AlarmCount++;
+                if (ptr.Result.HasValue)
+                {
+                    double r = ptr.Result.Value;
+                    if (r < acc.Min) acc.Min = r;
+                    if (r > acc.Max) acc.Max = r;
+                    acc.Sum += r;
+                    acc.SumOfSquares += r * r;
+                    acc.ResultCount++;
+                }
+                break;
+            }
+            case Ftr ftr:
+            {
+                var key = (ftr.HeadNumber, ftr.SiteNumber, ftr.TestNumber);
+                var acc = GetOrCreateAccumulator(accumulators, key);
+                acc.ExecutedCount++;
+                acc.TestType = 'F';
+                acc.TestName ??= ftr.TestText;
+                var flags = (TestResultFlags)(ftr.TestFlags ?? 0);
+                if ((flags & TestResultFlags.Failed) != 0) acc.FailedCount++;
+                if ((flags & TestResultFlags.Alarm) != 0) acc.AlarmCount++;
+                break;
+            }
+            case Mpr mpr:
+            {
+                var key = (mpr.HeadNumber, mpr.SiteNumber, mpr.TestNumber);
+                var acc = GetOrCreateAccumulator(accumulators, key);
+                acc.ExecutedCount++;
+                acc.TestType = 'M';
+                acc.TestName ??= mpr.TestText;
+                var flags = (TestResultFlags)mpr.TestFlags;
+                if ((flags & TestResultFlags.Failed) != 0) acc.FailedCount++;
+                if ((flags & TestResultFlags.Alarm) != 0) acc.AlarmCount++;
+                if (mpr.ReturnResults != null)
+                {
+                    foreach (var r in mpr.ReturnResults)
+                    {
+                        double d = r;
+                        if (d < acc.Min) acc.Min = d;
+                        if (d > acc.Max) acc.Max = d;
+                        acc.Sum += d;
+                        acc.SumOfSquares += d * d;
+                        acc.ResultCount++;
+                    }
+                }
+                break;
+            }
         }
+    }
 
-        var generated = GenerateTsrs(records, scope, existingTsrs);
-        if (generated.Count == 0)
+    private static TestAccumulator GetOrCreateAccumulator(
+        Dictionary<(byte, byte, uint), TestAccumulator> accumulators,
+        (byte, byte, uint) key)
+    {
+        if (!accumulators.TryGetValue(key, out var acc))
         {
-            foreach (var rec in records)
-                yield return rec;
+            acc = new TestAccumulator();
+            accumulators[key] = acc;
+        }
+        return acc;
+    }
+
+    internal static IEnumerable<Tsr> BuildSummaries(
+        Dictionary<(byte Head, byte Site, uint TestNumber), TestAccumulator> accumulators,
+        HashSet<(byte Head, byte Site, uint TestNumber)> existing,
+        SummaryScope scope)
+    {
+        if (accumulators.Count == 0)
             yield break;
-        }
-
-        int insertionIndex = SummaryInsertionPoint.Find(records);
-        for (int i = 0; i < insertionIndex; i++)
-            yield return records[i];
-        foreach (var tsr in generated)
-            yield return tsr;
-        for (int i = insertionIndex; i < records.Count; i++)
-            yield return records[i];
-    }
-
-    internal static List<Tsr> GenerateTsrs(
-        List<StdfRecord> records, SummaryScope scope, HashSet<(byte Head, byte Site, uint TestNum)> existing)
-    {
-        var testRecords = new List<ITestRecord>();
-        foreach (var rec in records)
-        {
-            if (rec is ITestRecord tr)
-                testRecords.Add(tr);
-        }
-
-        if (testRecords.Count == 0)
-            return [];
-
-        var result = new List<Tsr>();
 
         if ((scope & SummaryScope.HeadSite) != 0)
         {
-            var groups = testRecords.GroupBy(t => (t.HeadNumber, t.SiteNumber, t.TestNumber));
-            foreach (var g in groups)
+            foreach (var (key, acc) in accumulators)
             {
-                if (existing.Contains(g.Key))
+                if (existing.Contains(key))
                     continue;
-                result.Add(BuildTsr(g.Key.HeadNumber, g.Key.SiteNumber, g.Key.TestNumber, g.ToList()));
+                yield return BuildTsr(key.Head, key.Site, key.TestNumber, acc);
             }
         }
 
         if ((scope & SummaryScope.Head) != 0)
         {
-            var groups = testRecords.GroupBy(t => (t.HeadNumber, t.TestNumber));
-            foreach (var g in groups)
+            var headRollups = new Dictionary<(byte Head, uint TestNumber), TestAccumulator>();
+            foreach (var (key, acc) in accumulators)
             {
-                if (existing.Contains((g.Key.HeadNumber, 255, g.Key.TestNumber)))
+                var rollupKey = (key.Head, key.TestNumber);
+                if (!headRollups.TryGetValue(rollupKey, out var rollup))
+                {
+                    rollup = new TestAccumulator();
+                    headRollups[rollupKey] = rollup;
+                }
+                RollUp(rollup, acc);
+            }
+
+            foreach (var (key, acc) in headRollups)
+            {
+                if (existing.Contains((key.Head, 255, key.TestNumber)))
                     continue;
-                result.Add(BuildTsr(g.Key.HeadNumber, 255, g.Key.TestNumber, g.ToList()));
+                yield return BuildTsr(key.Head, 255, key.TestNumber, acc);
             }
         }
 
         if ((scope & SummaryScope.Overall) != 0)
         {
-            var groups = testRecords.GroupBy(t => t.TestNumber);
-            foreach (var g in groups)
+            var overallRollups = new Dictionary<uint, TestAccumulator>();
+            foreach (var (key, acc) in accumulators)
             {
-                if (existing.Contains((255, 255, g.Key)))
+                if (!overallRollups.TryGetValue(key.TestNumber, out var rollup))
+                {
+                    rollup = new TestAccumulator();
+                    overallRollups[key.TestNumber] = rollup;
+                }
+                RollUp(rollup, acc);
+            }
+
+            foreach (var (testNumber, acc) in overallRollups)
+            {
+                if (existing.Contains((255, 255, testNumber)))
                     continue;
-                result.Add(BuildTsr(255, 255, g.Key, g.ToList()));
+                yield return BuildTsr(255, 255, testNumber, acc);
             }
         }
-
-        return result;
     }
 
-    private static Tsr BuildTsr(byte head, byte site, uint testNumber, List<ITestRecord> testRecords)
+    private static void RollUp(TestAccumulator target, TestAccumulator source)
     {
-        uint executedCount = (uint)testRecords.Count;
-        uint failedCount = 0;
-        uint alarmCount = 0;
-        char testType = ' ';
-        string? testName = null;
+        target.ExecutedCount += source.ExecutedCount;
+        target.FailedCount += source.FailedCount;
+        target.AlarmCount += source.AlarmCount;
+        if (source.Min < target.Min) target.Min = source.Min;
+        if (source.Max > target.Max) target.Max = source.Max;
+        target.Sum += source.Sum;
+        target.SumOfSquares += source.SumOfSquares;
+        target.ResultCount += source.ResultCount;
+        if (target.TestType == '\0') target.TestType = source.TestType;
+        target.TestName ??= source.TestName;
+    }
 
-        // Collect results for statistics (PTR has single Result, MPR has ReturnResults)
-        var results = new List<float>();
-
-        foreach (var tr in testRecords)
-        {
-            byte testFlags;
-            switch (tr)
-            {
-                case Ptr ptr:
-                    testType = 'P';
-                    testFlags = ptr.TestFlags;
-                    testName ??= ptr.TestText;
-                    if (ptr.Result.HasValue)
-                        results.Add(ptr.Result.Value);
-                    break;
-                case Ftr ftr:
-                    testType = 'F';
-                    testFlags = ftr.TestFlags ?? 0;
-                    testName ??= ftr.TestText;
-                    break;
-                case Mpr mpr:
-                    testType = 'M';
-                    testFlags = mpr.TestFlags;
-                    testName ??= mpr.TestText;
-                    if (mpr.ReturnResults != null)
-                    {
-                        foreach (var r in mpr.ReturnResults)
-                            results.Add(r);
-                    }
-                    break;
-                default:
-                    testFlags = 0;
-                    break;
-            }
-
-            var flags = (TestResultFlags)testFlags;
-            if ((flags & TestResultFlags.Failed) != 0)
-                failedCount++;
-            if ((flags & TestResultFlags.Alarm) != 0)
-                alarmCount++;
-        }
-
+    private static Tsr BuildTsr(byte head, byte site, uint testNumber, TestAccumulator acc)
+    {
         var tsr = new Tsr
         {
             HeadNumber = head,
             SiteNumber = site,
-            TestType = testType,
+            TestType = acc.TestType,
             TestNumber = testNumber,
-            ExecutedCount = executedCount,
-            FailedCount = failedCount,
-            AlarmCount = alarmCount,
-            TestName = testName,
+            ExecutedCount = acc.ExecutedCount,
+            FailedCount = acc.FailedCount,
+            AlarmCount = acc.AlarmCount,
+            TestName = acc.TestName,
         };
 
-        if (results.Count > 0 && testType != 'F')
+        if (acc.ResultCount > 0 && acc.TestType != 'F')
         {
-            float min = float.MaxValue;
-            float max = float.MinValue;
-            float sum = 0;
-            float sumSq = 0;
-            foreach (var r in results)
-            {
-                if (r < min) min = r;
-                if (r > max) max = r;
-                sum += r;
-                sumSq += r * r;
-            }
-
             tsr.OptionalFlags = 0; // all stats valid
-            tsr.ResultMin = min;
-            tsr.ResultMax = max;
-            tsr.ResultSum = sum;
-            tsr.ResultSumOfSquares = sumSq;
+            tsr.ResultMin = (float)acc.Min;
+            tsr.ResultMax = (float)acc.Max;
+            tsr.ResultSum = (float)acc.Sum;
+            tsr.ResultSumOfSquares = (float)acc.SumOfSquares;
         }
-        else if (testType == 'F')
+        else if (acc.TestType == 'F')
         {
-            // FTR has no result values; mark all result stats as invalid
             tsr.OptionalFlags = (byte)(
                 TsrOptionalFlags.ResultMinInvalid |
                 TsrOptionalFlags.ResultMaxInvalid |
@@ -216,5 +287,19 @@ public static class TestSummaryGenerator
         }
 
         return tsr;
+    }
+
+    internal sealed class TestAccumulator
+    {
+        public uint ExecutedCount;
+        public uint FailedCount;
+        public uint AlarmCount;
+        public char TestType;
+        public string? TestName;
+        public double Min = double.MaxValue;
+        public double Max = double.MinValue;
+        public double Sum;
+        public double SumOfSquares;
+        public int ResultCount;
     }
 }
