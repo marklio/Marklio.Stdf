@@ -17,23 +17,28 @@ public static class StructureValidator
     /// <see cref="ErrorRecord"/> instances inline (before offending records or at
     /// end of stream) when violations are detected. All original records pass through.
     /// </summary>
+    private sealed class StructureState
+    {
+        public bool SawFar, SawMir, SawMrr;
+    }
+
     public static async IAsyncEnumerable<StdfRecord> ValidateStructure(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var openPirs = new HashSet<(byte head, byte site)>();
-        bool sawFar = false, sawMir = false, sawMrr = false;
+        var state = new StructureState();
 
         await foreach (var rec in source.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
-            var error = Validate(rec, openPirs, ref sawFar, ref sawMir, ref sawMrr);
+            var error = Validate(rec, openPirs, state);
             if (error != null)
                 yield return error;
 
             yield return rec;
         }
 
-        foreach (var error in EndOfStream(openPirs, sawFar, sawMir, sawMrr))
+        foreach (var error in EndOfStream(openPirs, state.SawFar, state.SawMir, state.SawMrr))
             yield return error;
     }
 
@@ -43,25 +48,25 @@ public static class StructureValidator
     public static IEnumerable<StdfRecord> ValidateStructure(this IEnumerable<StdfRecord> source)
     {
         var openPirs = new HashSet<(byte head, byte site)>();
-        bool sawFar = false, sawMir = false, sawMrr = false;
+        var state = new StructureState();
 
         foreach (var rec in source)
         {
-            var error = Validate(rec, openPirs, ref sawFar, ref sawMir, ref sawMrr);
+            var error = Validate(rec, openPirs, state);
             if (error != null)
                 yield return error;
 
             yield return rec;
         }
 
-        foreach (var error in EndOfStream(openPirs, sawFar, sawMir, sawMrr))
+        foreach (var error in EndOfStream(openPirs, state.SawFar, state.SawMir, state.SawMrr))
             yield return error;
     }
 
     private static ErrorRecord? Validate(
         StdfRecord rec,
         HashSet<(byte head, byte site)> openPirs,
-        ref bool sawFar, ref bool sawMir, ref bool sawMrr)
+        StructureState state)
     {
         if (rec is ErrorRecord)
             return null;
@@ -69,15 +74,15 @@ public static class StructureValidator
         switch (rec)
         {
             case Far:
-                sawFar = true;
+                state.SawFar = true;
                 break;
 
             case Mir:
-                sawMir = true;
+                state.SawMir = true;
                 break;
 
             case Mrr:
-                sawMrr = true;
+                state.SawMrr = true;
                 break;
 
             case Pir pir:

@@ -19,17 +19,22 @@ public static class OrderingValidator
     /// instances before offending records when violations are detected.
     /// All original records are always yielded.
     /// </summary>
+    private sealed class OrderingState
+    {
+        public FileState State = FileState.ExpectFar;
+        public int BpsDepth;
+    }
+
     public static async IAsyncEnumerable<StdfRecord> ValidateOrdering(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var state = FileState.ExpectFar;
+        var st = new OrderingState();
         var openPirs = new HashSet<(byte head, byte site)>();
-        int bpsDepth = 0;
 
         await foreach (var rec in source.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
-            var errors = Validate(rec, ref state, openPirs, ref bpsDepth);
+            var errors = Validate(rec, st, openPirs);
             if (errors != null)
                 foreach (var error in errors)
                     yield return error;
@@ -43,13 +48,12 @@ public static class OrderingValidator
     /// </summary>
     public static IEnumerable<StdfRecord> ValidateOrdering(this IEnumerable<StdfRecord> source)
     {
-        var state = FileState.ExpectFar;
+        var st = new OrderingState();
         var openPirs = new HashSet<(byte head, byte site)>();
-        int bpsDepth = 0;
 
         foreach (var rec in source)
         {
-            var errors = Validate(rec, ref state, openPirs, ref bpsDepth);
+            var errors = Validate(rec, st, openPirs);
             if (errors != null)
                 foreach (var error in errors)
                     yield return error;
@@ -59,8 +63,8 @@ public static class OrderingValidator
     }
 
     private static List<ErrorRecord>? Validate(
-        StdfRecord rec, ref FileState state,
-        HashSet<(byte head, byte site)> openPirs, ref int bpsDepth)
+        StdfRecord rec, OrderingState st,
+        HashSet<(byte head, byte site)> openPirs)
     {
         if (rec is ErrorRecord)
             return null;
@@ -79,23 +83,23 @@ public static class OrderingValidator
             });
         }
 
-        if (state == FileState.Done)
+        if (st.State == FileState.Done)
         {
             AddError("STDF_ORDER_RECORD_AFTER_MRR", $"Record {rec.GetType().Name} appeared after MRR.");
             return errors;
         }
 
-        switch (state)
+        switch (st.State)
         {
             case FileState.ExpectFar:
                 if (rec is not Far)
                 {
                     AddError("STDF_ORDER_NO_FAR", $"Expected FAR as first record, got {rec.GetType().Name}.");
-                    state = FileState.ExpectMir;
+                    st.State = FileState.ExpectMir;
                 }
                 else
                 {
-                    state = FileState.ExpectMir;
+                    st.State = FileState.ExpectMir;
                     return null;
                 }
                 break;
@@ -103,7 +107,7 @@ public static class OrderingValidator
             case FileState.ExpectMir:
                 if (rec is Mir)
                 {
-                    state = FileState.TestData;
+                    st.State = FileState.TestData;
                     return null;
                 }
                 if (rec is Atr)
@@ -115,7 +119,7 @@ public static class OrderingValidator
         switch (rec)
         {
             case Pir pir:
-                if (state == FileState.Summaries)
+                if (st.State == FileState.Summaries)
                     AddError("STDF_ORDER_TEST_AFTER_SUMMARY", "PIR appeared after summary records.");
                 var pirKey = (pir.HeadNumber, pir.SiteNumber);
                 if (!openPirs.Add(pirKey))
@@ -129,44 +133,44 @@ public static class OrderingValidator
                 break;
 
             case Ptr ptr:
-                if (state == FileState.Summaries)
+                if (st.State == FileState.Summaries)
                     AddError("STDF_ORDER_TEST_AFTER_SUMMARY", "PTR appeared after summary records.");
                 if (!openPirs.Contains((ptr.HeadNumber, ptr.SiteNumber)))
                     AddError("STDF_ORDER_NO_PIR", $"PTR without open PIR for head {ptr.HeadNumber}, site {ptr.SiteNumber}.");
                 break;
 
             case Ftr ftr:
-                if (state == FileState.Summaries)
+                if (st.State == FileState.Summaries)
                     AddError("STDF_ORDER_TEST_AFTER_SUMMARY", "FTR appeared after summary records.");
                 if (!openPirs.Contains((ftr.HeadNumber, ftr.SiteNumber)))
                     AddError("STDF_ORDER_NO_PIR", $"FTR without open PIR for head {ftr.HeadNumber}, site {ftr.SiteNumber}.");
                 break;
 
             case Mpr mpr:
-                if (state == FileState.Summaries)
+                if (st.State == FileState.Summaries)
                     AddError("STDF_ORDER_TEST_AFTER_SUMMARY", "MPR appeared after summary records.");
                 if (!openPirs.Contains((mpr.HeadNumber, mpr.SiteNumber)))
                     AddError("STDF_ORDER_NO_PIR", $"MPR without open PIR for head {mpr.HeadNumber}, site {mpr.SiteNumber}.");
                 break;
 
             case Bps:
-                bpsDepth++;
+                st.BpsDepth++;
                 break;
 
             case Eps:
-                if (bpsDepth <= 0)
+                if (st.BpsDepth <= 0)
                     AddError("STDF_ORDER_UNPAIRED_BPS", "EPS without matching BPS.");
                 else
-                    bpsDepth--;
+                    st.BpsDepth--;
                 break;
 
             case Pcr or Hbr or Sbr or Tsr or Wrr:
-                if (state == FileState.TestData)
-                    state = FileState.Summaries;
+                if (st.State == FileState.TestData)
+                    st.State = FileState.Summaries;
                 break;
 
             case Mrr:
-                state = FileState.Done;
+                st.State = FileState.Done;
                 break;
         }
 
