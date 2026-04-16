@@ -35,8 +35,14 @@ public static class PartCountGenerator
         this IEnumerable<StdfRecord> source,
         SummaryScope scope = SummaryScope.All)
     {
-        var records = source.ToList();
-        return EmitWithSummaries(records, scope);
+        return Core(source, scope);
+
+        static IEnumerable<StdfRecord> Core(IEnumerable<StdfRecord> source, SummaryScope scope)
+        {
+            var records = source.ToList();
+            foreach (var rec in EmitWithSummaries(records, scope))
+                yield return rec;
+        }
     }
 
     private static IEnumerable<StdfRecord> EmitWithSummaries(List<StdfRecord> records, SummaryScope scope)
