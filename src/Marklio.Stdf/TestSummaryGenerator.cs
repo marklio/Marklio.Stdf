@@ -276,8 +276,9 @@ public static class TestSummaryGenerator
             tsr.ResultSum = (float)acc.Sum;
             tsr.ResultSumOfSquares = (float)acc.SumOfSquares;
         }
-        else if (acc.TestType == 'F')
+        else
         {
+            // FTR has no result values; PTR/MPR with no results also need stats marked invalid
             tsr.OptionalFlags = (byte)(
                 TsrOptionalFlags.ResultMinInvalid |
                 TsrOptionalFlags.ResultMaxInvalid |
