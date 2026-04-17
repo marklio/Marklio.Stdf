@@ -14,6 +14,15 @@ public static class UnknownRecordValidator
     /// Yields an <see cref="ErrorRecord"/> before each <see cref="UnknownRecord"/>.
     /// All original records (including the unknown ones) pass through unchanged.
     /// </summary>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of <see cref="StdfRecord"/> that includes all original records plus an <see cref="ErrorRecord"/> before each <see cref="UnknownRecord"/>.</returns>
+    /// <remarks>
+    /// Unknown records are record types not recognized by the parser (vendor-specific or future types).
+    /// Each <see cref="UnknownRecord"/> gets an <see cref="ErrorRecord"/> with severity
+    /// <see cref="ErrorSeverity.Error"/> emitted immediately before it. The unknown record itself
+    /// is still yielded so downstream processing can inspect or round-trip it.
+    /// </remarks>
     public static async IAsyncEnumerable<StdfRecord> RejectUnknownRecords(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -38,6 +47,9 @@ public static class UnknownRecordValidator
     /// <summary>
     /// Synchronous version of <see cref="RejectUnknownRecords(IAsyncEnumerable{StdfRecord}, CancellationToken)"/>.
     /// </summary>
+    /// <inheritdoc cref="RejectUnknownRecords(IAsyncEnumerable{StdfRecord}, CancellationToken)" path="/remarks"/>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <returns>An enumerable of <see cref="StdfRecord"/> that includes all original records plus an <see cref="ErrorRecord"/> before each <see cref="UnknownRecord"/>.</returns>
     public static IEnumerable<StdfRecord> RejectUnknownRecords(this IEnumerable<StdfRecord> source)
     {
         foreach (var rec in source)

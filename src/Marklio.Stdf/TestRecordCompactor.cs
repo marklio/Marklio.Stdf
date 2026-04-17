@@ -28,6 +28,9 @@ public static class TestRecordCompactor
     /// to restore the removed fields.
     /// </para>
     /// </remarks>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of <see cref="StdfRecord"/> with redundant static fields removed from subsequent test records.</returns>
     public static async IAsyncEnumerable<StdfRecord> CompactTestRecords(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -46,6 +49,8 @@ public static class TestRecordCompactor
     /// Synchronous version of <see cref="CompactTestRecords(IAsyncEnumerable{StdfRecord}, CancellationToken)"/>.
     /// </summary>
     /// <inheritdoc cref="CompactTestRecords(IAsyncEnumerable{StdfRecord}, CancellationToken)" path="/remarks"/>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <returns>An enumerable of <see cref="StdfRecord"/> with redundant static fields removed from subsequent test records.</returns>
     public static IEnumerable<StdfRecord> CompactTestRecords(this IEnumerable<StdfRecord> source)
     {
         var seenPtrs = new HashSet<uint>();

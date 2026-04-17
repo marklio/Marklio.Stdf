@@ -26,6 +26,9 @@ public static class TestRecordExpander
     /// Non-test records pass through unchanged.
     /// </para>
     /// </remarks>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of <see cref="StdfRecord"/> with static fields restored on subsequent test records.</returns>
     public static async IAsyncEnumerable<StdfRecord> ExpandTestRecords(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -44,6 +47,8 @@ public static class TestRecordExpander
     /// Synchronous version of <see cref="ExpandTestRecords(IAsyncEnumerable{StdfRecord}, CancellationToken)"/>.
     /// </summary>
     /// <inheritdoc cref="ExpandTestRecords(IAsyncEnumerable{StdfRecord}, CancellationToken)" path="/remarks"/>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <returns>An enumerable of <see cref="StdfRecord"/> with static fields restored on subsequent test records.</returns>
     public static IEnumerable<StdfRecord> ExpandTestRecords(this IEnumerable<StdfRecord> source)
     {
         var ptrTemplates = new Dictionary<uint, Ptr>();

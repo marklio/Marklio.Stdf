@@ -22,6 +22,10 @@ public static class SummaryGenerator
     /// WRR or MRR record. For correct deduplication, input should follow STDF V4 ordering
     /// (summary records before WRR/MRR).
     /// </remarks>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="scope">Which summary scope levels to generate. Defaults to <see cref="SummaryScope.All"/>.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of <see cref="StdfRecord"/> that includes all original records plus any generated PCR, HBR, SBR, and TSR records.</returns>
     public static async IAsyncEnumerable<StdfRecord> GenerateSummaries(
         this IAsyncEnumerable<StdfRecord> source,
         SummaryScope scope = SummaryScope.All,
@@ -61,6 +65,9 @@ public static class SummaryGenerator
     /// WRR or MRR record. For correct deduplication, input should follow STDF V4 ordering
     /// (summary records before WRR/MRR).
     /// </remarks>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="scope">Which summary scope levels to generate. Defaults to <see cref="SummaryScope.All"/>.</param>
+    /// <returns>An enumerable of <see cref="StdfRecord"/> that includes all original records plus any generated PCR, HBR, SBR, and TSR records.</returns>
     public static IEnumerable<StdfRecord> GenerateSummaries(
         this IEnumerable<StdfRecord> source,
         SummaryScope scope = SummaryScope.All)

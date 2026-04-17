@@ -14,17 +14,34 @@ public static class OrderingValidator
 {
     internal enum FileState { ExpectFar, ExpectMir, TestData, Summaries, Done }
 
-    /// <summary>
-    /// Validates STDF V4 record ordering rules. Yields <see cref="ErrorRecord"/>
-    /// instances before offending records when violations are detected.
-    /// All original records are always yielded.
-    /// </summary>
+    /// <summary>Internal state for the ordering validation state machine.</summary>
     private sealed class OrderingState
     {
         public FileState State = FileState.ExpectFar;
         public int BpsDepth;
     }
 
+    /// <summary>
+    /// Validates STDF V4 record ordering rules. Yields <see cref="ErrorRecord"/>
+    /// instances before offending records when violations are detected.
+    /// All original records are always yielded.
+    /// </summary>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of <see cref="StdfRecord"/> that includes all original records plus any <see cref="ErrorRecord"/> instances for ordering violations.</returns>
+    /// <remarks>
+    /// <para>
+    /// Uses a state machine to enforce STDF V4 ordering: FAR must be first, MIR must follow
+    /// FAR (ATR records are allowed between them), PIR/PRR must be properly paired per
+    /// head/site, test records (PTR/FTR/MPR) require an open PIR, summary records
+    /// (PCR/HBR/SBR/TSR/WRR) must not be followed by test data, BPS/EPS must be paired,
+    /// and MRR must be the last record.
+    /// </para>
+    /// <para>
+    /// At end of stream, additional errors are emitted for missing FAR/MIR, unclosed PIR/BPS,
+    /// and missing MRR.
+    /// </para>
+    /// </remarks>
     public static async IAsyncEnumerable<StdfRecord> ValidateOrdering(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -49,6 +66,9 @@ public static class OrderingValidator
     /// <summary>
     /// Synchronous version of <see cref="ValidateOrdering(IAsyncEnumerable{StdfRecord}, CancellationToken)"/>.
     /// </summary>
+    /// <inheritdoc cref="ValidateOrdering(IAsyncEnumerable{StdfRecord}, CancellationToken)" path="/remarks"/>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <returns>An enumerable of <see cref="StdfRecord"/> that includes all original records plus any <see cref="ErrorRecord"/> instances for ordering violations.</returns>
     public static IEnumerable<StdfRecord> ValidateOrdering(this IEnumerable<StdfRecord> source)
     {
         var st = new OrderingState();

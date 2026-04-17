@@ -30,6 +30,7 @@ public static class RecordFilter
     /// <param name="source">The record stream to filter.</param>
     /// <param name="head">The head number to match, or <c>null</c> to accept any head.</param>
     /// <param name="site">The site number to match, or <c>null</c> to accept any site.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A filtered record stream.</returns>
     public static async IAsyncEnumerable<StdfRecord> FilterByHeadSite(
         this IAsyncEnumerable<StdfRecord> source,
@@ -47,6 +48,7 @@ public static class RecordFilter
     /// <summary>
     /// Synchronous version of <see cref="FilterByHeadSite(IAsyncEnumerable{StdfRecord}, byte?, byte?, CancellationToken)"/>.
     /// </summary>
+    /// <inheritdoc cref="FilterByHeadSite(IAsyncEnumerable{StdfRecord}, byte?, byte?, CancellationToken)" path="/remarks"/>
     /// <param name="source">The record stream to filter.</param>
     /// <param name="head">The head number to match, or <c>null</c> to accept any head.</param>
     /// <param name="site">The site number to match, or <c>null</c> to accept any site.</param>

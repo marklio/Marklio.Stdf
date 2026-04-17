@@ -19,6 +19,12 @@ public static class ErrorRecordExtensions
     /// (throws on any error record). Use <see cref="ErrorSeverity.Error"/> to ignore warnings.
     /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of <see cref="StdfRecord"/> that includes all original records from the source stream.</returns>
+    /// <exception cref="StdfValidationException">Thrown when an <see cref="ErrorRecord"/> with severity at or above <paramref name="minimumSeverity"/> is encountered.</exception>
+    /// <remarks>
+    /// Error records below the minimum severity pass through silently. Non-error records are
+    /// always yielded unchanged. The exception is thrown in place of yielding the offending error record.
+    /// </remarks>
     public static async IAsyncEnumerable<StdfRecord> ThrowOnError(
         this IAsyncEnumerable<StdfRecord> source,
         ErrorSeverity minimumSeverity = ErrorSeverity.Warning,
@@ -42,6 +48,12 @@ public static class ErrorRecordExtensions
     /// The minimum severity that triggers an exception. Defaults to <see cref="ErrorSeverity.Warning"/>
     /// (throws on any error record). Use <see cref="ErrorSeverity.Error"/> to ignore warnings.
     /// </param>
+    /// <returns>An enumerable of <see cref="StdfRecord"/> that includes all original records from the source stream.</returns>
+    /// <exception cref="StdfValidationException">Thrown when an <see cref="ErrorRecord"/> with severity at or above <paramref name="minimumSeverity"/> is encountered.</exception>
+    /// <remarks>
+    /// Error records below the minimum severity pass through silently. Non-error records are
+    /// always yielded unchanged. The exception is thrown in place of yielding the offending error record.
+    /// </remarks>
     public static IEnumerable<StdfRecord> ThrowOnError(
         this IEnumerable<StdfRecord> source,
         ErrorSeverity minimumSeverity = ErrorSeverity.Warning)

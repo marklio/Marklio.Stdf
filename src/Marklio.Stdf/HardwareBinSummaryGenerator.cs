@@ -24,6 +24,10 @@ public static class HardwareBinSummaryGenerator
     /// before the first WRR/MRR, consistent with STDF V4 ordering rules.
     /// </para>
     /// </remarks>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="scope">Which summary scope levels to generate. Defaults to <see cref="SummaryScope.All"/>.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of <see cref="StdfRecord"/> that includes all original records plus any generated HBR records.</returns>
     public static async IAsyncEnumerable<StdfRecord> GenerateHardwareBinSummaries(
         this IAsyncEnumerable<StdfRecord> source,
         SummaryScope scope = SummaryScope.All,
@@ -70,6 +74,9 @@ public static class HardwareBinSummaryGenerator
     /// before the first WRR/MRR, consistent with STDF V4 ordering rules.
     /// </para>
     /// </remarks>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="scope">Which summary scope levels to generate. Defaults to <see cref="SummaryScope.All"/>.</param>
+    /// <returns>An enumerable of <see cref="StdfRecord"/> that includes all original records plus any generated HBR records.</returns>
     public static IEnumerable<StdfRecord> GenerateHardwareBinSummaries(
         this IEnumerable<StdfRecord> source,
         SummaryScope scope = SummaryScope.All)

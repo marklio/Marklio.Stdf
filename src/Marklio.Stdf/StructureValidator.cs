@@ -12,16 +12,26 @@ namespace Marklio.Stdf;
 [Experimental("STDF0001", UrlFormat = "https://github.com/marklio/Marklio.Stdf")]
 public static class StructureValidator
 {
-    /// <summary>
-    /// Validates structural invariants of the STDF record stream. Yields
-    /// <see cref="ErrorRecord"/> instances inline (before offending records or at
-    /// end of stream) when violations are detected. All original records pass through.
-    /// </summary>
+    /// <summary>Internal state for structure validation tracking.</summary>
     private sealed class StructureState
     {
         public bool SawFar, SawMir, SawMrr;
     }
 
+    /// <summary>
+    /// Validates structural invariants of the STDF record stream. Yields
+    /// <see cref="ErrorRecord"/> instances inline (before offending records or at
+    /// end of stream) when violations are detected. All original records pass through.
+    /// </summary>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of <see cref="StdfRecord"/> that includes all original records plus any <see cref="ErrorRecord"/> instances for structural violations.</returns>
+    /// <remarks>
+    /// Lighter than <see cref="OrderingValidator"/>: checks PIR/PRR pairing (duplicate PIR
+    /// and unmatched PRR), and verifies required FAR, MIR, and MRR records are present.
+    /// At end of stream, errors are emitted for unclosed PIRs and any missing required records.
+    /// Does not enforce record ordering beyond pairing.
+    /// </remarks>
     public static async IAsyncEnumerable<StdfRecord> ValidateStructure(
         this IAsyncEnumerable<StdfRecord> source,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -45,6 +55,9 @@ public static class StructureValidator
     /// <summary>
     /// Synchronous version of <see cref="ValidateStructure(IAsyncEnumerable{StdfRecord}, CancellationToken)"/>.
     /// </summary>
+    /// <inheritdoc cref="ValidateStructure(IAsyncEnumerable{StdfRecord}, CancellationToken)" path="/remarks"/>
+    /// <param name="source">The STDF record stream to process.</param>
+    /// <returns>An enumerable of <see cref="StdfRecord"/> that includes all original records plus any <see cref="ErrorRecord"/> instances for structural violations.</returns>
     public static IEnumerable<StdfRecord> ValidateStructure(this IEnumerable<StdfRecord> source)
     {
         var openPirs = new HashSet<(byte head, byte site)>();
